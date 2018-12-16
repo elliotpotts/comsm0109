@@ -3,31 +3,26 @@
 #include <fmt/format.h>
 
 void summarise() {
-    fmt::print("{} instructions in decode buffer\n", sim::decode_buffer.size());
-    fmt::print("{} instructions in instruction queue\n", sim::insn_queue.size());
-    fmt::print("{} non-empty reservation stations\n",
-        std::count_if(sim::reservation_stations.begin(),
-                      sim::reservation_stations.end(),
-                      [](const sim::reservation_station& rs) { return !rs.empty(); }));
-    fmt::print("{} instructions awaiting commit in reorder buffer\n", 0);
-    fmt::print("-------------------------------\n");
+    fmt::print("------------ at t = {}: --------------------------\n", sim::t);
+    fmt::print(" {:2}/{} instructions in decode buffer\n", sim::decode_buffer.size(), sim::decode_buffer.capacity());
+    fmt::print(" {:2}/{} instructions in instruction queue\n", sim::insn_queue.size(), sim::insn_queue.capacity());
+    fmt::print(" {:2}/{} non-empty reservation stations\n",
+        std::count_if(sim::rs_slots.begin(),
+                      sim::rs_slots.end(),
+                      [](const sim::reservation_station_slot& rs) { return rs.has_value(); }),
+        sim::rs_slots.size());
+    fmt::print(" {:2}/{} instructions awaiting commit in reorder buffer\n", sim::rob.size(), sim::rob.capacity());
 }
 
 int main() {
-    /*sim::main_memory[0x00] = 1;
-    sim::main_memory[0x01] = 2;
-    sim::main_memory[0x02] = 3;
-    sim::main_memory[0x03] = 4;
-    sim::main_memory[0x04] = 5;
-    sim::main_memory[0x05] = 6;
-    sim::main_memory[0x06] = 0;
-    sim::main_memory[0x07] = 0;
-    sim::main_memory[0x08] = 0;
-    sim::main_memory[0x09] = sim::encoded_insn {sim::opcode::mov, {{sim::areg::g0}} };*/
-    sim::main_memory[0x00] = sim::encoded_insn {sim::opcode::mov, {{sim::areg::g0}}, sim::areg::g1};
+    sim::crf[sim::areg::g0] = 1;
+    sim::crf[sim::areg::g1] = 2;
+    sim::pc = sim::ready(0x0);
+    sim::main_memory[0] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g0, sim::areg::g1}}, sim::areg::g2};
 
-    summarise();
-    sim::tick();
-    summarise();
+    for(int i = 0; i < 5; i++) {
+        summarise();
+        sim::tick();
+    }
     return 0;
 }

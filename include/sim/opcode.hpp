@@ -3,7 +3,7 @@
 
 namespace sim {
     enum class opcode {
-        mov,
+        add,
         ldw,
         stw,
         jneq,
@@ -20,7 +20,7 @@ struct fmt::formatter<sim::opcode> : formatter<std::string_view> {
     auto format(sim::opcode oc, FormatContext &ctx) {
         std::string_view name = "unknown";
         switch (oc) {
-            case sim::opcode::mov:  name = "mov";  break;
+            case sim::opcode::add:  name = "add";  break;
             case sim::opcode::ldw:  name = "ldw";  break;
             case sim::opcode::stw:  name = "stw";  break;
             case sim::opcode::jneq: name = "jneq"; break;

@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <optional>
 #include <memory>
+#include <fmt/format.h>
 
 namespace sim {
     template<typename T>
@@ -13,7 +14,7 @@ namespace sim {
     class future;
 
     template<typename T>
-    future<T> immediate(T value) {
+    future<T> ready(T value) {
         return {std::make_shared<std::optional<T>>(value)};
     }
 
@@ -24,7 +25,7 @@ namespace sim {
         }
     public:
         friend future<T> promise<T>::anticipate();
-        friend future<T> immediate<>(T);
+        friend future<T> ready<>(T);
         explicit operator bool() const noexcept {
             return result->has_value();
         }
@@ -49,6 +50,23 @@ namespace sim {
         }
         future<T> anticipate() {
             return future<T>{result};
+        }
+    };
+}
+
+namespace fmt {
+    template <typename T>
+    struct formatter<sim::future<T>> {
+        template <typename ParseContext>
+        constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+        template <typename FormatContext>
+        auto format(const sim::future<T> &f, FormatContext &ctx) {
+            if (f) {
+                return format_to(ctx.begin(), "${}", *f);
+            } else {
+                return format_to(ctx.begin(), "$⧗");
+            }
         }
     };
 }

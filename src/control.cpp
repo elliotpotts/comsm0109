@@ -3,83 +3,108 @@
 #include <sim/util.hpp>
 #include <sim/future.hpp>
 #include <fmt/format.h>
+#include <sim/insn.hpp>
+#include <algorithm>
+#include <iterator>
 
-// TODO: branch prediction
+sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
+    return std::visit(match {
+        [](sim::word immediate) { return sim::ready(immediate); },
+        [](sim::areg from_reg) {
+            if (auto fut_it = rat.find(from_reg); fut_it == rat.end()) {
+                return sim::ready(crf[from_reg]);
+            } else {
+                return fut_it->second;
+            }
+        }
+    }, operand);
+}
+
+// For now always predict branch will be taken
+void sim::speculate(const sim::static_insn& branch) {
+    sim::pc = sim::resolve_op(*branch.branches_to);
+}
+
 void sim::fetch() {
-    for(int i = 0; i < sim::pipeline_width
-                && !decode_buffer.full()
-                && sim::pc < static_cast<int>(main_memory.size()); i++) {
-        fmt::print("Fetching from {:#x}: ", sim::pc);
-        auto p_encoded = std::get_if<sim::encoded_insn>(&sim::main_memory[sim::pc]);
-        if (p_encoded) {
-            fmt::print("{}\n", p_encoded->opcode);
-            sim::decode_buffer.push_back(*p_encoded);
-            sim::pc++;
-        } else {
-            fmt::print("data.\n");
-            break;
+    if (pc) {
+        for(int i = 0; i < sim::pipeline_width
+                    && !decode_buffer.full()
+                    && *sim::pc < static_cast<sim::addr_t>(sim::main_memory.size()); i++) {
+            if (std::visit( match {
+                [](sim::encoded_insn encoded) {
+                    sim::decode_buffer.push_back({*sim::pc, encoded});
+                    sim::pc = sim::ready(*sim::pc + 1);
+                    return false;
+                },
+                [](sim::word data) {
+                    return true;
+                }
+            }, sim::main_memory[*sim::pc])) {
+                break;
+            };
         }
     }
 }
 
 void sim::decode() {
     for(int i = 0; i < sim::pipeline_width && !decode_buffer.empty() && !insn_queue.full(); i++) {
-        insn_queue.push_back(std::get<sim::encoded_insn>(decode_buffer.front()));
+        static_insn decoded;
+        *static_cast<sim::encoded_insn*>(&decoded) = std::get<sim::encoded_insn>(decode_buffer.front().second);
+        decoded.address = decode_buffer.front().first;
+        insn_queue.push_back(decoded);
         decode_buffer.pop_front();
+        if (decoded.branches_to) {
+            decode_buffer.clear();
+            sim::speculate(decoded);
+            break;
+        }
     }
 }
 
 void sim::issue() {
     while(!insn_queue.empty() && !rob.full()) {
-        if(auto rs = std::find_if(reservation_stations.begin(),
-                                  reservation_stations.end(),
-                                  [](sim::reservation_station& rs) { return rs.empty(); });
-           rs != reservation_stations.end())
+        if (auto rs = std::find_if(sim::rs_slots.begin(),
+                                   sim::rs_slots.end(),
+                                   [](sim::reservation_station_slot& rs) { return !rs.has_value(); });
+            rs != sim::rs_slots.end())
             {
-            sim::encoded_insn encoded = insn_queue.front();
-            insn_queue.pop_front();
+            sim::static_insn statik = insn_queue.front();
+            insn_queue.pop_front(); 
 
-            // Create "in-flight" instruction using renamed operands
-            sim::insn inflight;
-            inflight.opcode = encoded.opcode;
-            for(sim::encoded_operand op : encoded.operands) {
-                std::visit(match {
-                    [&](sim::areg src) {
-                        if(auto renamed_it = rat.find(src); renamed_it == rat.end()) {
-                            std::pair<decltype(rat)::iterator, bool> inserted = rat.insert({src, sim::immediate(crf[src])});
-                            inflight.operands.push_back(inserted.first->second);
-                        } else {
-                            inflight.operands.push_back(renamed_it->second);
-                        }
-                    },
-                    [&](sim::word imm) { inflight.operands.push_back(sim::immediate(imm)); }
-                }, op);
-            }
+            sim::live_insn live;
+            live.opcode = statik.opcode;
+            live.address = statik.address;
+            std::transform(
+                statik.operands.begin(), statik.operands.end(),
+                std::back_inserter(live.operands),
+                sim::resolve_op
+            );
 
-            // Add reorder buffer entry
-            switch (inflight.opcode) {
-                case opcode::mov:
+            switch (live.opcode) {
+                case opcode::add:
                 case opcode::ldw: {
-                    sim::promise<sim::word>& result = rs->hold(inflight);
-                    rat.insert_or_assign(*encoded.destination, result.anticipate());
-                    rob.plan(sim::reg_write{result.anticipate(), *encoded.destination});
+                    // Create a promise for the result
+                    sim::promise<sim::word> result;
+                    *rs = sim::reservation_station{live, result};
+                    sim::rob.push_back({
+                        live,
+                        sim::writeback{result.anticipate(), *live.destination}
+                    });
                     break;
                 }
                 case opcode::stw: {
+                    // Don't need a promise for this
                     break;
                 }
                 case opcode::jneq: {
-                    sim::promise<bool>& taken = rs->hold_branch(inflight);
-                    rob.plan(sim::branch{sim::immediate(0), taken.anticipate()});
+                    // Create a promise for whether the branch was taken or not
+                    throw std::runtime_error("Can't handle branches yet LOL");
                     break;
                 }
                 case opcode::halt: {
-                    rob.plan(sim::halt{});
                     break;
                 }
-                default:
-                    throw std::runtime_error("invalid opcode");
-                    break;
+                default: throw std::runtime_error("invalid opcode");
             }
         } else {
             break;
@@ -88,11 +113,14 @@ void sim::issue() {
 }
 
 void sim::execute() {
-    fmt::print("executing\n");
+    for (const sim::reservation_station_slot& slot : sim::rs_slots) {
+        if (slot) {
+            fmt::print("{}\n", slot->waiting);
+        }
+    }
 }
 
 void sim::commit() {
-    fmt::print("committing\n");
 }
 
 void sim::tick() {
@@ -101,4 +129,5 @@ void sim::tick() {
     sim::issue();
     sim::decode();
     sim::fetch();
+    sim::t++;
 }
