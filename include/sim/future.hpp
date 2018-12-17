@@ -26,8 +26,11 @@ namespace sim {
     public:
         friend future<T> promise<T>::anticipate();
         friend future<T> ready<>(T);
-        explicit operator bool() const noexcept {
+        bool ready() const {
             return result->has_value();
+        }
+        explicit operator bool() const {
+            return ready();
         }
         T operator*() const {
             if(*this) {

@@ -138,7 +138,24 @@ void sim::execute() {
 }
 
 void sim::commit() {
-    
+    int commits_left = 6;
+    while (!rob.empty() && commits_left > 0) {
+        if (sim::ready(sim::rob.front().commit)) {
+            commits_left--;
+            reorder in_order = rob.front();
+            fmt::print("Committing {}\n", in_order.insn);
+            rob.pop_front();
+            std::visit( match {
+                [](writeback wb) { sim::crf[wb.dest] = *wb.value; }, 
+                [](store st) { sim::main_memory[*st.dest] = *st.value; },
+                [](branch b) { throw std::runtime_error("Can't handle branch"); },
+                [](halt h) { throw std::runtime_error("Halted"); },
+                [](std::monostate) {}
+            }, in_order.commit);
+        } else {
+            break;
+        }
+    }
 }
 
 void sim::tick() {

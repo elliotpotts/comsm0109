@@ -26,9 +26,13 @@ int main() {
     sim::main_memory[2] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g2, sim::areg::g3}}, sim::areg::g0};
     sim::main_memory[3] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g4, sim::areg::g4}}, sim::areg::g4};
 
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i < 12; i++) {
+        fmt::print("----------- t = {}\n", sim::t);
         //summarise();
         sim::tick();
+    }
+    for(auto pair : sim::crf) {
+        fmt::print("   {} = {}\n", pair.first, pair.second);
     }
     
     return 0;

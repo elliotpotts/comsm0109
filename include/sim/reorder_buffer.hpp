@@ -22,10 +22,12 @@ namespace sim {
     };
     struct halt {
     };
-    using commitment = std::variant<writeback, store, branch, halt>;
+    //TODO: why wouldn't there be a commitment?
+    using commitment = std::variant<std::monostate, writeback, store, branch, halt>;
+    bool ready(commitment);
     struct reorder {
-        live_insn instruction;
-        std::optional<commitment> commit;
+        live_insn insn;
+        commitment commit;
     };
     class reorder_buffer {
         boost::circular_buffer<reorder> commits;
