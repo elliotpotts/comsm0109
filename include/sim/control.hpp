@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <map>
 #include <vector>
 #include <utility>
 #include <boost/circular_buffer.hpp>
@@ -28,7 +29,7 @@ namespace sim {
     // Execute ⭣
     inline boost::circular_buffer<reorder> rob {40};
     //  Commit ⭣
-    inline std::unordered_map<areg, word> crf; // ⭢⭡
+    inline std::map<areg, word> crf; // ⭢⭡
 
     // Auxilliary
     inline std::unordered_map<areg, future<word>> rat;
