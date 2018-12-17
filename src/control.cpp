@@ -83,8 +83,7 @@ void sim::issue() {
             live.address = statik.address;
 
             switch (live.opcode) {
-                case opcode::add:
-                case opcode::ldw: {
+                case opcode::add: {
                     sim::promise<sim::word> result;
                     *rs = sim::reservation_station{live, {{result}}};
                     sim::rat.insert_or_assign(*live.destination, result.anticipate());
@@ -93,6 +92,16 @@ void sim::issue() {
                         sim::writeback{result.anticipate(), *live.destination}
                     });
                     break;
+                }
+                case opcode::ldw: {
+                    sim::promise<sim::word> address;
+                    sim::promise<sim::word> data;
+                    *rs = sim::reservation_station{live, {{address, data}}};
+                    sim::rat.insert_or_assign(*live.destination, data.anticipate());
+                    sim::rob.push_back ({
+                        live, 
+                        sim::writeback{data.anticipate(), *live.destination}
+                    });
                 }
                 case opcode::stw: {
                     // Don't need a promise because this doesn't writeback to registers
