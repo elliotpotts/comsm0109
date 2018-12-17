@@ -55,6 +55,7 @@ void sim::decode() {
         decode_buffer.pop_front();
         if (decoded.branches_to) {
             decode_buffer.clear();
+            //TODO: resolving operands in decode stage will give incorrect results!
             sim::speculate(decoded);
             break;
         }
@@ -85,7 +86,7 @@ void sim::issue() {
                 case opcode::add:
                 case opcode::ldw: {
                     sim::promise<sim::word> result;
-                    *rs = sim::reservation_station{live, result};
+                    *rs = sim::reservation_station{live, {{result}}};
                     sim::rat.insert_or_assign(*live.destination, result.anticipate());
                     sim::rob.push_back ({
                         live,
@@ -123,7 +124,7 @@ void sim::execute() {
                                               [&] (const sim::execution_unit& eu) { return eu.can_start(slot->waiting); });
                     eu_it != sim::execution_units.end())
                     {
-                    eu_it->start(slot->waiting, slot->broadcast);
+                    eu_it->start(slot->waiting, slot->promises);
                     slot.reset();
                 }
             } else {

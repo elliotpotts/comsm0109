@@ -9,7 +9,7 @@
 #include <vector>
 #include <variant>
 
-namespace sim {   
+namespace sim {
     template<typename T>
     struct insn {
         sim::opcode opcode;
@@ -30,12 +30,6 @@ namespace sim {
         addr_t address;
     };
     bool ready(live_insn);
-
-    using magic_promise = std::variant<
-        promise<word>, // computed result
-        promise<bool>, // branch taken
-        std::nullopt_t // nothing to broadcast (i.e. store)
-    >;
 }
 
 namespace fmt {

@@ -4,11 +4,13 @@
 #include <optional>
 #include <sim/insn.hpp>
 #include <sim/future.hpp>
+#include <vector>
+#include <any>
 
 namespace sim {
     struct reservation_station {
         live_insn waiting;
-        magic_promise broadcast;
+        std::vector<std::any> promises;
     };
     using reservation_station_slot = std::optional<reservation_station>;
 }
