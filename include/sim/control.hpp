@@ -14,6 +14,7 @@ namespace sim {
     using memcell = std::variant<sim::word, sim::encoded_insn>;
 
     inline int t = 0;
+    inline int cc = 0;
     const inline int pipeline_width = 6;
     inline future<addr_t> pc = ready(0);
 
@@ -25,7 +26,6 @@ namespace sim {
     //   Issue ⭣
     inline std::vector<reservation_station_slot> rs_slots {4};
     // Execute ⭣
-    //inline reorder_buffer rob {40};
     inline boost::circular_buffer<reorder> rob {40};
     //  Commit ⭣
     inline std::unordered_map<areg, word> crf; // ⭢⭡
