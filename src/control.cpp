@@ -73,31 +73,31 @@ void sim::issue() {
 
             sim::live_insn live;
             live.opcode = statik.opcode;
-            live.address = statik.address;
-            std::transform(
+            std::transform (
                 statik.operands.begin(), statik.operands.end(),
                 std::back_inserter(live.operands),
                 sim::resolve_op
             );
+            live.destination = statik.destination;
+            live.address = statik.address;
 
             switch (live.opcode) {
                 case opcode::add:
                 case opcode::ldw: {
-                    // Create a promise for the result
                     sim::promise<sim::word> result;
                     *rs = sim::reservation_station{live, result};
-                    sim::rob.push_back({
+                    sim::rat.insert_or_assign(*live.destination, result.anticipate());
+                    sim::rob.push_back ({
                         live,
                         sim::writeback{result.anticipate(), *live.destination}
                     });
                     break;
                 }
                 case opcode::stw: {
-                    // Don't need a promise for this
+                    // Don't need a promise because this doesn't writeback to registers
                     break;
                 }
                 case opcode::jneq: {
-                    // Create a promise for whether the branch was taken or not
                     throw std::runtime_error("Can't handle branches yet LOL");
                     break;
                 }
@@ -113,14 +113,32 @@ void sim::issue() {
 }
 
 void sim::execute() {
-    for (const sim::reservation_station_slot& slot : sim::rs_slots) {
+    // Dispatch
+    for (sim::reservation_station_slot& slot : sim::rs_slots) {
         if (slot) {
-            fmt::print("{}\n", slot->waiting);
+            if (sim::ready(slot->waiting)) {
+                fmt::print("  ready: {}\n", slot->waiting);
+                if (auto eu_it = std::find_if(sim::execution_units.begin(),
+                                              sim::execution_units.end(),
+                                              [&] (const sim::execution_unit& eu) { return eu.can_start(slot->waiting); });
+                    eu_it != sim::execution_units.end())
+                    {
+                    eu_it->start(slot->waiting, slot->broadcast);
+                    slot.reset();
+                }
+            } else {
+                fmt::print("waiting: {}\n", slot->waiting);
+            }
         }
+    }
+    // Work
+    for (auto& eu : sim::execution_units) {
+        eu.work();
     }
 }
 
 void sim::commit() {
+    
 }
 
 void sim::tick() {

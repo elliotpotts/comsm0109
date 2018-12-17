@@ -17,12 +17,19 @@ void summarise() {
 int main() {
     sim::crf[sim::areg::g0] = 1;
     sim::crf[sim::areg::g1] = 2;
+    sim::crf[sim::areg::g2] = 0;
+    sim::crf[sim::areg::g3] = 0;
+    sim::crf[sim::areg::g4] = 6;
     sim::pc = sim::ready(0x0);
     sim::main_memory[0] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g0, sim::areg::g1}}, sim::areg::g2};
+    sim::main_memory[1] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g0, sim::areg::g2}}, sim::areg::g3};
+    sim::main_memory[2] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g2, sim::areg::g3}}, sim::areg::g0};
+    sim::main_memory[3] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g4, sim::areg::g4}}, sim::areg::g4};
 
-    for(int i = 0; i < 5; i++) {
-        summarise();
+    for(int i = 0; i < 8; i++) {
+        //summarise();
         sim::tick();
     }
+    
     return 0;
 }

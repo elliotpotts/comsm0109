@@ -8,6 +8,7 @@
 #include <sim/reservation_station.hpp>
 #include <sim/reorder_buffer.hpp>
 #include <sim/future.hpp>
+#include <sim/execution_unit.hpp>
 
 namespace sim {
     using memcell = std::variant<sim::word, sim::encoded_insn>;
@@ -22,7 +23,7 @@ namespace sim {
     //  Decode ⭣
     inline boost::circular_buffer<static_insn> insn_queue {pipeline_width};
     //   Issue ⭣
-    inline std::vector<reservation_station_slot> rs_slots {pipeline_width};
+    inline std::vector<reservation_station_slot> rs_slots {4};
     // Execute ⭣
     //inline reorder_buffer rob {40};
     inline boost::circular_buffer<reorder> rob {40};
@@ -31,6 +32,7 @@ namespace sim {
 
     // Auxilliary
     inline std::unordered_map<areg, future<word>> rat;
+    inline std::vector<execution_unit> execution_units = {{ make_alu(), make_alu() }};
     future<word> resolve_op(encoded_operand);
 
     void speculate(const static_insn& branch);

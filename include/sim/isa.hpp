@@ -6,7 +6,7 @@
 
 namespace sim {
     enum class areg {
-        g0, g1, g2, g3
+        g0, g1, g2, g3, g4
     };
     using word = std::int32_t;
     using addr_t = int;
@@ -38,6 +38,7 @@ namespace fmt {
                 case sim::areg::g1: return format_to(ctx.begin(), "g1");
                 case sim::areg::g2: return format_to(ctx.begin(), "g2");
                 case sim::areg::g3: return format_to(ctx.begin(), "g3");
+                case sim::areg::g4: return format_to(ctx.begin(), "g4");
                 default: return format_to(ctx.begin(), "unknown register");
             }
         }

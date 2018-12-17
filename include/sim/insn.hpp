@@ -7,8 +7,9 @@
 #include <sim/future.hpp>
 #include <optional>
 #include <vector>
+#include <variant>
 
-namespace sim {
+namespace sim {   
     template<typename T>
     struct insn {
         sim::opcode opcode;
@@ -28,6 +29,13 @@ namespace sim {
     struct live_insn : public insn<future<word>> {
         addr_t address;
     };
+    bool ready(live_insn);
+
+    using magic_promise = std::variant<
+        promise<word>, // computed result
+        promise<bool>, // branch taken
+        std::nullopt_t // nothing to broadcast (i.e. store)
+    >;
 }
 
 namespace fmt {
@@ -43,7 +51,7 @@ namespace fmt {
                 it = format_to(it, " {}", op);
             }
             if (insn.destination) {
-                it = format_to(it, " | {}", *insn.destination);
+                it = format_to(it, " ⭢ {}", *insn.destination);
             }
             return format_to(it, ")");
         }

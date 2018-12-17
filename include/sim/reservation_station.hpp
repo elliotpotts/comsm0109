@@ -8,11 +8,7 @@
 namespace sim {
     struct reservation_station {
         live_insn waiting;
-        std::variant<
-            promise<int>,  // to writeback
-            promise<bool>, // to branch
-            std::nullopt_t
-        > broadcast;
+        magic_promise broadcast;
     };
     using reservation_station_slot = std::optional<reservation_station>;
 }
