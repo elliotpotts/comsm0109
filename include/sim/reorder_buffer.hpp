@@ -29,15 +29,6 @@ namespace sim {
         live_insn insn;
         commitment commit;
     };
-    class reorder_buffer {
-        boost::circular_buffer<reorder> commits;
-    public:
-        reorder_buffer(int size);
-        int size();
-        int capacity();
-        bool full();
-        void plan(live_insn, commitment);
-    };
 }
 
 #endif
