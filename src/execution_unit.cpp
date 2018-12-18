@@ -15,7 +15,7 @@ void sim::execution_unit::work() {
         ticks_left--;
         if (ticks_left <= 0) {
             finisher(*executing, promises);
-            fmt::print("finished: {}\n", *executing);
+            fmt::print("   finished: {}\n", *executing);
             executing.reset();
             promises.clear();
             ticks_left = -1;
@@ -37,7 +37,8 @@ sim::execution_unit sim::make_alu() {
 }
 
 static bool lsu_oc_pred(sim::opcode oc) {
-    return oc == sim::opcode::ldw;
+    return (oc == sim::opcode::ldw)
+         | (oc == sim::opcode::stw);
 }
 static int lsu_start(sim::live_insn) {
     return 3;

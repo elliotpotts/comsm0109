@@ -20,11 +20,6 @@ sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
     }, operand);
 }
 
-// For now always predict branch will be taken
-void sim::speculate(const sim::static_insn& branch) {
-    sim::pc = sim::resolve_op(*branch.branches_to);
-}
-
 void sim::fetch() {
     if (pc) {
         for(int i = 0; i < sim::pipeline_width
@@ -51,14 +46,9 @@ void sim::decode() {
         static_insn decoded;
         *static_cast<sim::encoded_insn*>(&decoded) = std::get<sim::encoded_insn>(decode_buffer.front().second);
         decoded.address = decode_buffer.front().first;
+        fmt::print("  decoding: {}\n", decoded.opcode);
         insn_queue.push_back(decoded);
         decode_buffer.pop_front();
-        if (decoded.branches_to) {
-            decode_buffer.clear();
-            //TODO: resolving operands in decode stage will give incorrect results!
-            sim::speculate(decoded);
-            break;
-        }
     }
 }
 
@@ -82,6 +72,8 @@ void sim::issue() {
             live.destination = statik.destination;
             live.address = statik.address;
 
+            fmt::print("   issueing: {}\n", live);
+
             switch (live.opcode) {
                 case opcode::add: {
                     sim::promise<sim::word> result;
@@ -90,22 +82,27 @@ void sim::issue() {
                     sim::rob.push_back ({
                         live,
                         sim::writeback{result.anticipate(), *live.destination}
-                    });
+                    }); 
                     break;
                 }
                 case opcode::ldw: {
+                    // here we need to wait until prior stores complete
                     sim::promise<sim::word> address;
                     sim::promise<sim::word> data;
-                    *rs = sim::reservation_station{live, {{address, data}}};
+                    *rs = sim::reservation_station{live, {address, data}};
                     sim::rat.insert_or_assign(*live.destination, data.anticipate());
                     sim::lsq.push_back({true, address.anticipate(), data.anticipate()});
                     sim::rob.push_back ({
                         live, 
                         sim::writeback{data.anticipate(), *live.destination}
                     });
+                    break;
                 }
                 case opcode::stw: {
-                    // Don't need a promise because this doesn't writeback to registers
+                    sim::promise<sim::word> address;
+                    *rs = sim::reservation_station{live, {address}};
+                    sim::lsq.push_back({false, address.anticipate(), live.operands[0]});
+                    // no need for rat entry as this does not write to any registers
                     break;
                 }
                 case opcode::jneq: {
@@ -124,6 +121,10 @@ void sim::issue() {
 }
 
 void sim::execute() {
+    // Work
+    for (auto& eu : sim::execution_units) {
+        eu.work();
+    }
     // Dispatch
     for (sim::reservation_station_slot& slot : sim::rs_slots) {
         if (slot) {
@@ -133,18 +134,18 @@ void sim::execute() {
                                               [&] (const sim::execution_unit& eu) { return eu.can_start(slot->waiting); });
                     eu_it != sim::execution_units.end())
                     {
-                    fmt::print("issueing: {}\n", slot->waiting);
+                    fmt::print("dispatching: {}\n", slot->waiting);
                     eu_it->start(slot->waiting, slot->promises);
                     slot.reset();
+                } else {
+                    fmt::print("no execution units available for {}\n", slot->waiting);
                 }
             } else {
-                fmt::print(" waiting: {}\n", slot->waiting);
+                fmt::print("    waiting: {}\n", slot->waiting);
             }
+        } else {
+            fmt::print("(rs empty)\n");
         }
-    }
-    // Work
-    for (auto& eu : sim::execution_units) {
-        eu.work();
     }
 }
 

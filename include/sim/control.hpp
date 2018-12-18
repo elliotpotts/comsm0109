@@ -22,11 +22,11 @@ namespace sim {
 
     inline std::vector<memcell> main_memory(1024 * 1024, 42);
     //   Fetch ⭣
-    inline boost::circular_buffer<std::pair<addr_t, memcell>> decode_buffer {pipeline_width};
+    inline boost::circular_buffer<std::pair<addr_t, memcell>> decode_buffer {1};
     //  Decode ⭣
-    inline boost::circular_buffer<static_insn> insn_queue {pipeline_width};
+    inline boost::circular_buffer<static_insn> insn_queue {1};
     //   Issue ⭣
-    inline std::vector<reservation_station_slot> rs_slots {4};
+    inline std::vector<reservation_station_slot> rs_slots {1};
     // Execute ⭣
     inline boost::circular_buffer<reorder> rob {40};
     //  Commit ⭣
