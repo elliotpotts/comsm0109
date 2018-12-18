@@ -25,6 +25,7 @@ namespace sim {
     //TODO: why wouldn't there be a commitment?
     using commitment = std::variant<std::monostate, writeback, store, branch, halt>;
     bool ready(commitment);
+    //TODO: do we need to keep track of the instruction itsself?
     struct reorder {
         live_insn insn;
         commitment commit;

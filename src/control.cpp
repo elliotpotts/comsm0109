@@ -98,6 +98,7 @@ void sim::issue() {
                     sim::promise<sim::word> data;
                     *rs = sim::reservation_station{live, {{address, data}}};
                     sim::rat.insert_or_assign(*live.destination, data.anticipate());
+                    sim::lsq.push_back({true, address.anticipate(), data.anticipate()});
                     sim::rob.push_back ({
                         live, 
                         sim::writeback{data.anticipate(), *live.destination}
@@ -127,17 +128,17 @@ void sim::execute() {
     for (sim::reservation_station_slot& slot : sim::rs_slots) {
         if (slot) {
             if (sim::ready(slot->waiting)) {
-                fmt::print("  ready: {}\n", slot->waiting);
                 if (auto eu_it = std::find_if(sim::execution_units.begin(),
                                               sim::execution_units.end(),
                                               [&] (const sim::execution_unit& eu) { return eu.can_start(slot->waiting); });
                     eu_it != sim::execution_units.end())
                     {
+                    fmt::print("issueing: {}\n", slot->waiting);
                     eu_it->start(slot->waiting, slot->promises);
                     slot.reset();
                 }
             } else {
-                fmt::print("waiting: {}\n", slot->waiting);
+                fmt::print(" waiting: {}\n", slot->waiting);
             }
         }
     }
@@ -153,7 +154,7 @@ void sim::commit() {
         if (sim::ready(sim::rob.front().commit)) {
             commits_left--;
             reorder in_order = rob.front();
-            fmt::print("Committing {}\n", in_order.insn);
+            fmt::print(" committing: {}\n", in_order.insn);
             rob.pop_front();
             std::visit( match {
                 [](writeback wb) { sim::crf[wb.dest] = *wb.value; }, 

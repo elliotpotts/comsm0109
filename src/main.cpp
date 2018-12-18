@@ -20,13 +20,13 @@ int main() {
     sim::crf[sim::areg::g2] = 0;
     sim::crf[sim::areg::g3] = 0;
     sim::crf[sim::areg::g4] = 6;
-    sim::main_memory[0x3] = 4;
+    sim::main_memory[0x6] = 42;
     sim::pc = sim::ready(0x0);
     sim::main_memory[0] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g0, sim::areg::g1}}, sim::areg::g2};
-    //sim::main_memory[1] = sim::encoded_insn {sim::opcode::ldw, {{sim::areg::g0, sim::areg::g2}}, sim::areg::g4};
-    sim::main_memory[1] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g0, sim::areg::g2}}, sim::areg::g3};
-    sim::main_memory[2] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g2, sim::areg::g3}}, sim::areg::g0};
-    sim::main_memory[3] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g4, sim::areg::g4}}, sim::areg::g4};
+    sim::main_memory[1] = sim::encoded_insn {sim::opcode::ldw, {{sim::areg::g4, sim::areg::g3}}, sim::areg::g4};
+    sim::main_memory[2] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g0, sim::areg::g2}}, sim::areg::g3};
+    sim::main_memory[3] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g2, sim::areg::g3}}, sim::areg::g0};
+    sim::main_memory[4] = sim::encoded_insn {sim::opcode::add, {{sim::areg::g4, sim::areg::g4}}, sim::areg::g4};
 
     for(int i = 0; i < 12; i++) {
         fmt::print("----------- t = {}\n", sim::t);

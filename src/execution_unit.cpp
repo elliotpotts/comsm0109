@@ -1,5 +1,6 @@
 #include <sim/execution_unit.hpp>
 #include <fmt/format.h>
+#include <sim/control.hpp>
 
 bool sim::execution_unit::can_start(sim::live_insn i) const {
     return !executing.has_value() && handles_opcode(i.opcode);
@@ -14,7 +15,7 @@ void sim::execution_unit::work() {
         ticks_left--;
         if (ticks_left <= 0) {
             finisher(*executing, promises);
-            fmt::print("finished executing {}\n", *executing);
+            fmt::print("finished: {}\n", *executing);
             executing.reset();
             promises.clear();
             ticks_left = -1;
@@ -41,7 +42,11 @@ static bool lsu_oc_pred(sim::opcode oc) {
 static int lsu_start(sim::live_insn) {
     return 3;
 }
-static void lsu_finish(sim::live_insn, std::vector<std::any> results) {
+static void lsu_finish(sim::live_insn i, std::vector<std::any> results) {
+    sim::addr_t address = *i.operands[0] + *i.operands[1];
+    sim::word data = std::get<sim::word>(sim::main_memory[address]);
+    std::any_cast<sim::promise<sim::word>>(results[0]).fulfil(address);
+    std::any_cast<sim::promise<sim::word>>(results[1]).fulfil(data);
 }
 sim::execution_unit sim::make_lsu() {
     return {lsu_oc_pred, lsu_start, lsu_finish};

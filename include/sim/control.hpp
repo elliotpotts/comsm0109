@@ -10,6 +10,7 @@
 #include <sim/reorder_buffer.hpp>
 #include <sim/future.hpp>
 #include <sim/execution_unit.hpp>
+#include <sim/lsq.hpp>
 
 namespace sim {
     using memcell = std::variant<sim::word, sim::encoded_insn>;
@@ -33,7 +34,8 @@ namespace sim {
 
     // Auxilliary
     inline std::unordered_map<areg, future<word>> rat;
-    inline std::vector<execution_unit> execution_units = {{ make_alu(), make_alu() }};
+    inline boost::circular_buffer<load_store> lsq {20};
+    inline std::vector<execution_unit> execution_units = { make_alu(), make_alu(), make_lsu() };
     future<word> resolve_op(encoded_operand);
 
     void speculate(const static_insn& branch);
