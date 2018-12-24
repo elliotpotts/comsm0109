@@ -1,18 +1,20 @@
 #ifndef SIM_RESERVATION_STATION_HPP_INCLUDED
 #define SIM_RESERVATION_STATION_HPP_INCLUDED
 
-#include <optional>
-#include <sim/insn.hpp>
+#include <sim/isa.hpp>
+#include <sim/opcode.hpp>
 #include <sim/future.hpp>
 #include <vector>
-#include <any>
+#include <optional>
 
 namespace sim {
-    struct reservation_station {
-        live_insn waiting;
-        std::vector<std::any> promises;
+    struct reservation {
+        sim::opcode opcode;
+        std::vector<future<word>> operands;
+        promise<word> result;
+        bool ready();
     };
-    using reservation_station_slot = std::optional<reservation_station>;
+    std::vector<std::optional<reservation>>::iterator find_reservation();
 }
 
 #endif

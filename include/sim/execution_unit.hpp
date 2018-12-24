@@ -1,6 +1,7 @@
 #ifndef SIM_EXECUTION_UNIT_HPP_INCLUDED
 #define SIM_EXECUTION_UNIT_HPP_INCLUDED
 
+/*
 #include <sim/insn.hpp>
 #include <optional>
 #include <utility>
@@ -31,5 +32,5 @@ namespace sim {
     execution_unit make_alu();
     execution_unit make_lsu();
 }
-
+*/
 #endif

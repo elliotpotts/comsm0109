@@ -1,12 +1,93 @@
 #include <sim/insn.hpp>
-#include <variant>
 #include <sim/util.hpp>
+#include <sim/control.hpp>
+#include <variant>
 #include <algorithm>
 
-bool sim::ready(sim::live_insn i) {
-    return std::all_of (
-        i.operands.begin(),
-        i.operands.end(),
-        [](sim::future<sim::word> operand) { return static_cast<bool>(operand); }
-    );
+sim::add::add(encoded_operand lhs, encoded_operand rhs, areg dst):
+    lhs{lhs}, rhs{rhs}, dst{dst} {  
+}
+bool sim::add::try_issue() const {
+    auto res_it = sim::find_reservation();
+    if (res_it == sim::res_stn.end() || sim::rob.full()) return false; 
+    sim::promise<sim::word> sum;
+    *res_it = sim::reservation {
+        opcode::add,
+        {sim::resolve_op(lhs), sim::resolve_op(rhs)},
+        sum
+    };
+    sim::rat.insert_or_assign(dst, sum.anticipate());
+    sim::rob.push_back( writeback { sum.anticipate(), dst });
+    insn_queue.pop_front();
+    return true;
+}
+
+sim::ldw::ldw(encoded_operand address, areg dst):
+    address{address}, dst{dst} {
+}
+bool sim::ldw::try_issue() const {
+    if (sim::lsq.full() || sim::rob.full()) return false;
+
+    sim::promise<sim::word> data;
+    sim::rat.insert_or_assign(dst, data.anticipate());
+    sim::lsq.push_back( load { sim::resolve_op(address), data });
+    sim::rob.push_back( writeback { data.anticipate(), dst });
+    return true;
+}
+
+sim::stw::stw(encoded_operand data, encoded_operand address):
+    data{data}, address{address} {
+}
+bool sim::stw::try_issue() const {
+    if (sim::lsq.full() || sim::rob.full()) return false;
+
+    sim::lsq.push_back(store { sim::resolve_op(data), sim::resolve_op(address) });
+    sim::rob.push_back(store { sim::resolve_op(data), sim::resolve_op(address) });
+    return true;
+}
+
+sim::jnz::jnz(encoded_operand lhs, encoded_operand offset):
+    lhs{lhs}, offset{offset} {
+}
+bool sim::jnz::try_issue() const {
+    if (sim::rob.full()) return false;
+
+    sim::rob.push_back(branch {
+        sim::resolve_op(offset), //tru_offset
+        sim::ready(0), //fls_offset
+        sim::resolve_op(lhs) //taken
+    });
+    return true;
+}
+
+bool sim::halt::try_issue() const {
+    if (sim::rob.full()) return false;
+    
+    sim::rob.push_back(sim::trap {});
+    return true;
+}
+
+std::unique_ptr<sim::insn> sim::decode_at(sim::encoded_insn encoded, addr_t addr) {
+    switch (encoded.head) {
+        case opcode::add: return std::make_unique<sim::add> (
+            encoded.tail[0],
+            encoded.tail[1],
+            std::get<areg>(encoded.tail[2])
+        );
+        case opcode::cmp: throw std::runtime_error("no cmp instruction yet");
+        case opcode::ldw: return std::make_unique<sim::ldw> (
+            encoded.tail[0],
+            std::get<areg>(encoded.tail[1])
+        );
+        case opcode::stw: return std::make_unique<sim::stw> (
+            encoded.tail[0],
+            encoded.tail[1]
+        );
+        case opcode::jnz: return std::make_unique<sim::jnz> (
+            encoded.tail[0],
+            encoded.tail[1]
+        );
+        case opcode::halt: return std::make_unique<sim::halt>();
+        default: throw std::runtime_error("error decoding: unkown opcode");
+    };
 }

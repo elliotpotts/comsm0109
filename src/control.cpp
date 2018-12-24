@@ -20,11 +20,16 @@ sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
     }, operand);
 }
 
+std::vector<std::optional<sim::reservation>>::iterator sim::find_reservation() {
+    return std::find_if(sim::res_stn.begin(),
+                        sim::res_stn.end(),
+                        [](std::optional<sim::reservation>& rs) { return !rs.has_value(); });
+}
+
 void sim::fetch() {
     if (pc) {
-        for(int i = 0; i < sim::pipeline_width
-                    && !decode_buffer.full()
-                    && *sim::pc < static_cast<sim::addr_t>(sim::main_memory.size()); i++) {
+        while (!decode_buffer.full()
+            && *sim::pc < static_cast<sim::addr_t>(sim::main_memory.size())) {
             if (std::visit( match {
                 [](sim::encoded_insn encoded) {
                     sim::decode_buffer.push_back({*sim::pc, encoded});
@@ -42,91 +47,34 @@ void sim::fetch() {
 }
 
 void sim::decode() {
-    for(int i = 0; i < sim::pipeline_width && !decode_buffer.empty() && !insn_queue.full(); i++) {
-        static_insn decoded;
-        *static_cast<sim::encoded_insn*>(&decoded) = std::get<sim::encoded_insn>(decode_buffer.front().second);
-        decoded.address = decode_buffer.front().first;
-        fmt::print("  decoding: {}\n", decoded.opcode);
-        insn_queue.push_back(decoded);
+    while (!decode_buffer.empty() && !insn_queue.full()) {
+        std::unique_ptr<sim::insn> decoded = sim::decode_at (
+            std::get<sim::encoded_insn>(decode_buffer.front().second),
+            decode_buffer.front().first
+        );
+        //fmt::print("  decoding: {}\n", decoded.head);
+        insn_queue.push_back(std::move(decoded));
         decode_buffer.pop_front();
     }
 }
 
 void sim::issue() {
     while(!insn_queue.empty() && !rob.full()) {
-        if (auto rs = std::find_if(sim::rs_slots.begin(),
-                                   sim::rs_slots.end(),
-                                   [](sim::reservation_station_slot& rs) { return !rs.has_value(); });
-            rs != sim::rs_slots.end())
-            {
-            sim::static_insn statik = insn_queue.front();
-            insn_queue.pop_front(); 
-
-            sim::live_insn live;
-            live.opcode = statik.opcode;
-            std::transform (
-                statik.operands.begin(), statik.operands.end(),
-                std::back_inserter(live.operands),
-                sim::resolve_op
-            );
-            live.destination = statik.destination;
-            live.address = statik.address;
-
-            fmt::print("   issueing: {}\n", live);
-
-            switch (live.opcode) {
-                case opcode::add: {
-                    sim::promise<sim::word> result;
-                    *rs = sim::reservation_station{live, {{result}}};
-                    sim::rat.insert_or_assign(*live.destination, result.anticipate());
-                    sim::rob.push_back ({
-                        live,
-                        sim::writeback{result.anticipate(), *live.destination}
-                    }); 
-                    break;
-                }
-                case opcode::ldw: {
-                    // here we need to wait until prior stores complete
-                    sim::promise<sim::word> address;
-                    sim::promise<sim::word> data;
-                    *rs = sim::reservation_station{live, {address, data}};
-                    sim::rat.insert_or_assign(*live.destination, data.anticipate());
-                    sim::lsq.push_back({true, address.anticipate(), data.anticipate()});
-                    sim::rob.push_back ({
-                        live, 
-                        sim::writeback{data.anticipate(), *live.destination}
-                    });
-                    break;
-                }
-                case opcode::stw: {
-                    sim::promise<sim::word> address;
-                    *rs = sim::reservation_station{live, {address}};
-                    sim::lsq.push_back({false, address.anticipate(), live.operands[0]});
-                    // no need for rat entry as this does not write to any registers
-                    break;
-                }
-                case opcode::jneq: {
-                    throw std::runtime_error("Can't handle branches yet LOL");
-                    break;
-                }
-                case opcode::halt: {
-                    break;
-                }
-                default: throw std::runtime_error("invalid opcode");
-            }
+        if (sim::insn_queue.front()->try_issue()) {
+            insn_queue.pop_front();
         } else {
             break;
         }
     }
 }
 
-void sim::execute() {
+void sim::execute() {/*
     // Work
     for (auto& eu : sim::execution_units) {
         eu.work();
     }
     // Dispatch
-    for (sim::reservation_station_slot& slot : sim::rs_slots) {
+    for (std::optional<sim::reservation>& slot : sim::res_stn) {
         if (slot) {
             if (sim::ready(slot->waiting)) {
                 if (auto eu_it = std::find_if(sim::execution_units.begin(),
@@ -146,10 +94,10 @@ void sim::execute() {
         } else {
             fmt::print("(rs empty)\n");
         }
-    }
+    }*/
 }
 
-void sim::commit() {
+void sim::commit() {/*
     int commits_left = 6;
     while (!rob.empty() && commits_left > 0) {
         if (sim::ready(sim::rob.front().commit)) {
@@ -167,7 +115,7 @@ void sim::commit() {
         } else {
             break;
         }
-    }
+    }*/
 }
 
 void sim::tick() {

@@ -6,30 +6,22 @@
 #include <sim/isa.hpp>
 #include <sim/future.hpp>
 #include <sim/insn.hpp>
+#include <sim/lsq.hpp>
 
 namespace sim {
     struct writeback {
         future<word> value;
         areg dest;
     };
-    struct store {
-        future<word> value;
-        future<addr_t> dest;
-    };
     struct branch {
-        future<word> offset;
-        future<bool> taken;
+        future<addr_t> tru_offset;
+        future<addr_t> fls_offset;
+        future<addr_t> taken; // take branch when value != 0. todo: some better way
     };
-    struct halt {
+    struct trap {
     };
-    //TODO: why wouldn't there be a commitment?
-    using commitment = std::variant<std::monostate, writeback, store, branch, halt>;
+    using commitment = std::variant<writeback, store, branch, trap>;
     bool ready(commitment);
-    //TODO: do we need to keep track of the instruction itsself?
-    struct reorder {
-        live_insn insn;
-        commitment commit;
-    };
 }
 
 #endif

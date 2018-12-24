@@ -22,23 +22,23 @@ namespace sim {
 
     inline std::vector<memcell> main_memory(1024 * 1024, 42);
     //   Fetch ⭣
-    inline boost::circular_buffer<std::pair<addr_t, memcell>> decode_buffer {1};
+    inline boost::circular_buffer<std::pair<addr_t, memcell>> decode_buffer { pipeline_width };
     //  Decode ⭣
-    inline boost::circular_buffer<static_insn> insn_queue {1};
+    inline boost::circular_buffer<std::unique_ptr<insn>> insn_queue {pipeline_width};
     //   Issue ⭣
-    inline std::vector<reservation_station_slot> rs_slots {1};
+    inline std::unordered_map<areg, future<word>> rat;
+    inline boost::circular_buffer<load_store> lsq {20};
+    inline std::vector<std::optional<reservation>> res_stn {1};
     // Execute ⭣
-    inline boost::circular_buffer<reorder> rob {40};
+    //inline std::vector<execution_unit> execution_units = { make_alu(), make_alu(), make_lsu() };
+    inline boost::circular_buffer<commitment> rob {40};
     //  Commit ⭣
     inline std::map<areg, word> crf; // ⭢⭡
 
-    // Auxilliary
-    inline std::unordered_map<areg, future<word>> rat;
-    inline boost::circular_buffer<load_store> lsq {20};
-    inline std::vector<execution_unit> execution_units = { make_alu(), make_alu(), make_lsu() };
+    // Auxilliaryv
     future<word> resolve_op(encoded_operand);
 
-    void speculate(const static_insn& branch);
+    //void speculate(const static_insn& branch);
     void fetch();
     void decode();
     void issue();

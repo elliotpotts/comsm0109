@@ -5,33 +5,59 @@
 #include <sim/operand.hpp>
 #include <sim/isa.hpp>
 #include <sim/future.hpp>
+#include <sim/reservation_station.hpp>
 #include <optional>
 #include <vector>
 #include <variant>
+#include <memory>
 
 namespace sim {
-    template<typename T>
     struct insn {
-        sim::opcode opcode;
-        std::vector<T> operands;
-        std::optional<areg> destination;
-        std::optional<addr_t> writes_to;
-        std::optional<addr_t> loads_from;
-        std::optional<addr_t> branches_to;
+        virtual bool try_issue() const = 0;
+        virtual ~insn() = default;
     };
 
-    using encoded_insn = insn<encoded_operand>;
-
-    struct static_insn : public insn<encoded_operand> {
-        addr_t address;
+    struct add : public insn {
+        encoded_operand lhs;
+        encoded_operand rhs;
+        areg dst;
+        add(encoded_operand, encoded_operand, areg);
+        virtual bool try_issue() const override;
     };
 
-    struct live_insn : public insn<future<word>> {
-        addr_t address;
+    struct ldw : public insn {
+        encoded_operand address;
+        areg dst;
+        ldw(encoded_operand, areg);
+        virtual bool try_issue() const override;
     };
-    bool ready(live_insn);
+
+    struct stw : public insn {
+        encoded_operand data;
+        encoded_operand address;
+        stw(encoded_operand, encoded_operand);
+        virtual bool try_issue() const override;
+    };
+
+    struct jnz : public insn {
+        encoded_operand lhs;
+        encoded_operand offset;
+        jnz(encoded_operand, encoded_operand);
+        virtual bool try_issue() const override;
+    };
+    
+    struct halt : public insn {
+        virtual bool try_issue() const override;
+    };
+
+    struct encoded_insn {
+        sim::opcode head;
+        std::vector<encoded_operand> tail;
+    };
+
+    std::unique_ptr<insn> decode_at(encoded_insn, addr_t);
 }
-
+/*
 namespace fmt {
     template <>
     struct formatter<sim::live_insn> {
@@ -40,16 +66,13 @@ namespace fmt {
 
         template <typename FormatContext>
         auto format(sim::live_insn insn, FormatContext &ctx) {
-            auto it = format_to(ctx.begin(), "@{:x}({}", insn.address, insn.opcode);
+            auto it = format_to(ctx.begin(), "@{}({}", insn.timestamp);
             for(auto op : insn.operands) {
                 it = format_to(it, " {}", op);
-            }
-            if (insn.destination) {
-                it = format_to(it, " ⭢ {}", *insn.destination);
             }
             return format_to(it, ")");
         }
     };
-}
+}*/
 
 #endif
