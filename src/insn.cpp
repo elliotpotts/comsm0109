@@ -18,7 +18,6 @@ bool sim::add::try_issue() const {
     };
     sim::rat.insert_or_assign(dst, sum.anticipate());
     sim::rob.push_back( writeback { sum.anticipate(), dst });
-    insn_queue.pop_front();
     return true;
 }
 
