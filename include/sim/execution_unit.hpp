@@ -1,36 +1,36 @@
 #ifndef SIM_EXECUTION_UNIT_HPP_INCLUDED
 #define SIM_EXECUTION_UNIT_HPP_INCLUDED
 
-/*
-#include <sim/insn.hpp>
+#include <sim/isa.hpp>
+#include <sim/reservation_station.hpp>
+#include <sim/opcode.hpp>
 #include <optional>
 #include <utility>
 #include <functional>
-#include <variant>
-#include <any>
 
 namespace sim {
     class execution_unit {
-        std::optional<live_insn> executing;
-        std::vector<std::any> promises;
+        std::optional<opcode> oc;
+        std::vector<word> operands;
+        std::optional<promise<word>> computed;
         int ticks_left;
 
-        const std::function<bool(opcode)> handles_opcode;
-        const std::function<int(live_insn)> starter;
-        const std::function<void(live_insn, std::vector<std::any>)> finisher;
+        const std::function<bool(opcode)> mask;
+        const std::function<int(opcode, std::vector<word>)> time;
+        const std::function<void(opcode, std::vector<word>, promise<word>)> execute;
     public:
-        template<typename HF, typename SF, typename FF>
-        execution_unit(HF oc_pred, SF start, FF finish):
-            handles_opcode(oc_pred), starter(start), finisher(finish)
+        template<typename S, typename T, typename U>
+        execution_unit(S mask, T time, U execute):
+            mask(mask), time(time), execute(execute)
             {
         }
         
-        bool can_start(live_insn) const;
-        void start(live_insn, std::vector<std::any>);
+        bool can_start(const reservation&) const;
+        void start(const reservation&);
         void work();
     };
     execution_unit make_alu();
-    execution_unit make_lsu();
+    //execution_unit make_lsu();
 }
-*/
+
 #endif

@@ -28,9 +28,9 @@ namespace sim {
     //   Issue ⭣
     inline std::unordered_map<areg, future<word>> rat;
     inline boost::circular_buffer<load_store> lsq {20};
-    inline std::vector<std::optional<reservation>> res_stn {1};
+    inline std::vector<std::optional<reservation>> res_stn {36};
     // Execute ⭣
-    //inline std::vector<execution_unit> execution_units = { make_alu(), make_alu(), make_lsu() };
+    inline std::vector<execution_unit> execution_units = { make_alu(), make_alu() };
     inline boost::circular_buffer<commitment> rob {40};
     //  Commit ⭣
     inline std::map<areg, word> crf; // ⭢⭡

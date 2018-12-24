@@ -68,33 +68,24 @@ void sim::issue() {
     }
 }
 
-void sim::execute() {/*
+void sim::execute() {
     // Work
     for (auto& eu : sim::execution_units) {
         eu.work();
     }
     // Dispatch
     for (std::optional<sim::reservation>& slot : sim::res_stn) {
-        if (slot) {
-            if (sim::ready(slot->waiting)) {
-                if (auto eu_it = std::find_if(sim::execution_units.begin(),
-                                              sim::execution_units.end(),
-                                              [&] (const sim::execution_unit& eu) { return eu.can_start(slot->waiting); });
+        if (slot && slot->ready()) {
+            if (auto eu_it = std::find_if(sim::execution_units.begin(),
+                                          sim::execution_units.end(),
+                                          [&] (const sim::execution_unit& eu) { return eu.can_start(*slot); });
                     eu_it != sim::execution_units.end())
                     {
-                    fmt::print("dispatching: {}\n", slot->waiting);
-                    eu_it->start(slot->waiting, slot->promises);
-                    slot.reset();
-                } else {
-                    fmt::print("no execution units available for {}\n", slot->waiting);
-                }
-            } else {
-                fmt::print("    waiting: {}\n", slot->waiting);
+                eu_it->start(*slot);
+                slot.reset();
             }
-        } else {
-            fmt::print("(rs empty)\n");
         }
-    }*/
+    }
 }
 
 void sim::commit() {/*

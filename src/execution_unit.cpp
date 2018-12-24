@@ -2,53 +2,42 @@
 #include <fmt/format.h>
 #include <sim/control.hpp>
 
-bool sim::execution_unit::can_start(sim::live_insn i) const {
-    return !executing.has_value() && handles_opcode(i.opcode);
+bool sim::execution_unit::can_start(const sim::reservation& rs) const {
+    return !computed.has_value() && mask(rs.opcode);
 }
-void sim::execution_unit::start(sim::live_insn i, std::vector<std::any> outputs) {
-    executing = i;
-    promises = outputs;
-    ticks_left = starter(i);
+void sim::execution_unit::start(const reservation& rs) {
+    oc = rs.opcode;
+    std::transform (
+        rs.operands.cbegin(),
+        rs.operands.cend(),
+        std::back_inserter(operands),
+        [](const sim::future<sim::word>& fut) { return *fut; }
+    );
+    computed = rs.result;
+    ticks_left = time(rs.opcode, operands);
 }
 void sim::execution_unit::work() {
-    if (executing) {
+    if (oc) {
         ticks_left--;
         if (ticks_left <= 0) {
-            finisher(*executing, promises);
-            fmt::print("   finished: {}\n", *executing);
-            executing.reset();
-            promises.clear();
+            execute(*oc, operands, *computed);
+            oc.reset();
+            operands.clear();
+            computed.reset();
             ticks_left = -1;
         }
     }
 }
 
-static bool alu_oc_pred(sim::opcode oc) {
+static bool alu_mask(sim::opcode oc) {
     return oc == sim::opcode::add;
 }
-static int alu_start(sim::live_insn) {
+static int alu_time(sim::opcode oc, std::vector<sim::word> operands) {
     return 0;
 }
-static void alu_finish(sim::live_insn i, std::vector<std::any> results) {
-    std::any_cast<sim::promise<sim::word>>(results[0]).fulfil(*i.operands[0] + *i.operands[1]);
+static void alu_execute(sim::opcode opcode, std::vector<sim::word> operands, sim::promise<sim::word> result) {
+    result.fulfil(operands[0] + operands[1]);
 }
 sim::execution_unit sim::make_alu() {
-    return {alu_oc_pred, alu_start, alu_finish};
-}
-
-static bool lsu_oc_pred(sim::opcode oc) {
-    return (oc == sim::opcode::ldw)
-         | (oc == sim::opcode::stw);
-}
-static int lsu_start(sim::live_insn) {
-    return 3;
-}
-static void lsu_finish(sim::live_insn i, std::vector<std::any> results) {
-    sim::addr_t address = *i.operands[0] + *i.operands[1];
-    sim::word data = std::get<sim::word>(sim::main_memory[address]);
-    std::any_cast<sim::promise<sim::word>>(results[0]).fulfil(address);
-    std::any_cast<sim::promise<sim::word>>(results[1]).fulfil(data);
-}
-sim::execution_unit sim::make_lsu() {
-    return {lsu_oc_pred, lsu_start, lsu_finish};
+    return {alu_mask, alu_time, alu_execute};
 }
