@@ -8,16 +8,12 @@ sim::add::add(encoded_operand lhs, encoded_operand rhs, areg dst):
     lhs{lhs}, rhs{rhs}, dst{dst} {  
 }
 bool sim::add::try_issue() const {
-    auto res_it = sim::find_reservation();
-    if (res_it == sim::res_stn.end() || sim::rob.full()) return false; 
-    sim::promise<sim::word> sum;
-    *res_it = sim::reservation {
-        opcode::add,
-        {sim::resolve_op(lhs), sim::resolve_op(rhs)},
-        sum
-    };
-    sim::rat.insert_or_assign(dst, sum.anticipate());
-    sim::rob.push_back( writeback { sum.anticipate(), dst });
+    auto res_ptr = sim::find_reservation();
+    if (res_ptr == nullptr || sim::rob.full()) return false;
+    auto res = std::make_unique<add_res>(lhs, rhs);
+    sim::rat.insert_or_assign(dst, (res->sum.anticipate()));
+    sim::rob.push_back( writeback { res->sum.anticipate(), dst });
+    res_ptr->emplace(std::move(res));
     return true;
 }
 

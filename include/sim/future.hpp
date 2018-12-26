@@ -66,9 +66,9 @@ namespace fmt {
         template <typename FormatContext>
         auto format(const sim::future<T> &f, FormatContext &ctx) {
             if (f) {
-                return format_to(ctx.begin(), "${}", *f);
+                return format_to(ctx.begin(), "{}", *f);
             } else {
-                return format_to(ctx.begin(), "$⧗");
+                return format_to(ctx.begin(), "⧗");
             }
         }
     };

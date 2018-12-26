@@ -3,9 +3,11 @@
 
 #include <variant>
 #include <sim/isa.hpp>
+#include <sim/future.hpp>
 
 namespace sim {
     using encoded_operand = std::variant<areg, word>;
+    future<word> resolve_op(encoded_operand);
 }
 
 #endif

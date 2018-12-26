@@ -20,12 +20,6 @@ sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
     }, operand);
 }
 
-std::vector<std::optional<sim::reservation>>::iterator sim::find_reservation() {
-    return std::find_if(sim::res_stn.begin(),
-                        sim::res_stn.end(),
-                        [](std::optional<sim::reservation>& rs) { return !rs.has_value(); });
-}
-
 void sim::fetch() {
     if (pc) {
         while (!decode_buffer.full()
@@ -69,6 +63,16 @@ void sim::issue() {
 }
 
 void sim::execute() {
+    for (auto& eu : sim::execution_units) {
+        eu.dispatch();
+    }
+    for (auto& eu : sim::execution_units) {
+        eu.work();
+    }
+    for (auto& eu : sim::execution_units) {
+        eu.broadcast();
+    }
+    /*
     // Work
     for (auto& eu : sim::execution_units) {
         eu.work();
@@ -85,7 +89,7 @@ void sim::execute() {
                 slot.reset();
             }
         }
-    }
+    }*/
 }
 
 void sim::commit() {/*

@@ -2,19 +2,31 @@
 #define SIM_RESERVATION_STATION_HPP_INCLUDED
 
 #include <sim/isa.hpp>
+#include <sim/operand.hpp>
 #include <sim/opcode.hpp>
 #include <sim/future.hpp>
-#include <vector>
 #include <optional>
+#include <memory>
 
 namespace sim {
     struct reservation {
-        sim::opcode opcode;
-        std::vector<future<word>> operands;
-        promise<word> result;
-        bool ready();
+        virtual bool ready() = 0;
+        virtual int worktime() = 0;
+        virtual void execute() = 0;
+        virtual ~reservation() = default;
     };
-    std::vector<std::optional<reservation>>::iterator find_reservation();
+
+    struct add_res : public reservation {
+        future<word> lhs;
+        future<word> rhs;
+        promise<word> sum;
+        add_res(encoded_operand, encoded_operand);
+        virtual bool ready() override;
+        virtual int worktime() override;
+        virtual void execute() override;
+    };
+
+    std::optional<std::unique_ptr<sim::reservation>>* find_reservation();
 }
 
 #endif

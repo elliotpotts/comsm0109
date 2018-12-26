@@ -11,15 +11,11 @@ void summarise() {
     fmt::print(" {:2}/{} non-empty reservation stations\n",
         std::count_if(sim::res_stn.begin(),
                       sim::res_stn.end(),
-                      [](const std::optional<sim::reservation>& rs) { return rs.has_value(); }),
+                      [](const std::optional<auto>& rs) { return rs.has_value(); }),
         sim::res_stn.size());
     fmt::print(" {:2}/{} awaiting commitments in reorder buffer\n", sim::rob.size(), sim::rob.capacity());
     for(const sim::commitment& commit : sim::rob) {
-        if (std::holds_alternative<sim::writeback>(commit)) {
-            fmt::print("    {}\n", std::get<sim::writeback>(commit));
-        } else {
-            fmt::print("    (other commit)\n");
-        }
+        fmt::print("    {}\n", commit);
     }
 }
 
@@ -33,13 +29,14 @@ int main() {
     sim::pc = sim::ready(0x0);
     auto mem = sim::main_memory.begin();
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g0, sim::areg::g1, sim::areg::g2}};
-    //*mem++ = sim::encoded_insn {sim::opcode::stw, {17, 6, 0}};
-    //*mem++ = sim::encoded_insn {sim::opcode::ldw, {sim::areg::g4, sim::areg::g3, sim::areg::g4}};
+    //*mem++ = sim::encoded_insn {sim::opcode::stw, {17, 6}};
+    //*mem++ = sim::encoded_insn {sim::opcode::ldw, {sim::areg::g4, sim::areg::g4}};
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g0, sim::areg::g2, sim::areg::g3}};
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g2, sim::areg::g3, sim::areg::g0}};
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g4, sim::areg::g4, sim::areg::g4}};
+    *mem++ = sim::encoded_insn {sim::opcode::halt};
 
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < 7;  i++) {
         //fmt::print("----------- t = {}\n", sim::t);
         summarise();
         sim::tick();
