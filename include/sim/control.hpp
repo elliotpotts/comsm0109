@@ -20,11 +20,11 @@ namespace sim {
     const inline int pipeline_width = 6;
     inline future<addr_t> pc = ready(0);
 
-    inline std::vector<memcell> main_memory(1024 * 1024, 0);
+    inline std::vector<memcell> main_memory(1024 * 1024);
     //   Fetch ⭣
-    inline boost::circular_buffer<std::pair<addr_t, memcell>> decode_buffer { pipeline_width };
+    inline boost::circular_buffer<encoded_insn> decode_buffer { pipeline_width };
     //  Decode ⭣
-    inline boost::circular_buffer<std::unique_ptr<insn>> insn_queue {pipeline_width};
+    inline boost::circular_buffer<insn> insn_queue {pipeline_width};
     //   Issue ⭣
     inline std::unordered_map<areg, future<word>> rat;
     inline boost::circular_buffer<load_store> lsq {20};

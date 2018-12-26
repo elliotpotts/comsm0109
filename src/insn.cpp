@@ -4,6 +4,12 @@
 #include <variant>
 #include <algorithm>
 
+bool sim::try_issue(const insn& any_insn) {
+    return std::visit([](const auto& i) {
+        return i.try_issue();
+    }, any_insn);
+}
+
 sim::add::add(encoded_operand lhs, encoded_operand rhs, areg dst):
     lhs{lhs}, rhs{rhs}, dst{dst} {  
 }
@@ -63,6 +69,7 @@ bool sim::halt::try_issue() const {
     return true;
 }
 
+/*
 std::unique_ptr<sim::insn> sim::decode_at(sim::encoded_insn encoded, addr_t addr) {
     switch (encoded.head) {
         case opcode::add: return std::make_unique<sim::add> (
@@ -87,4 +94,4 @@ std::unique_ptr<sim::insn> sim::decode_at(sim::encoded_insn encoded, addr_t addr
         case opcode::halt: return std::make_unique<sim::halt>();
         default: throw std::runtime_error("error decoding: unkown opcode");
     };
-}
+}*/

@@ -26,22 +26,9 @@ void sim::fetch() {
             && sim::pc
             && *sim::pc < static_cast<sim::addr_t>(sim::main_memory.size())) {
             if (std::visit( match {
-                [](sim::encoded_insn encoded) {
-                    //pre-decode to see if we just fetched a branch
-                    std::unique_ptr<insn> decoded = decode_at(encoded, *sim::pc);
-                    if (auto* br = dynamic_cast<sim::jeq*>(decoded.get()); br) {
-                        std::visit( match {
-                            [](const sim::word offset) {
-                                sim::pc = sim::ready(*sim::pc + offset);
-                            },
-                            [](const sim::areg reg) {
-                                sim::pc = sim::never<sim::addr_t>();
-                            } 
-                        }, br->offset);
-                    } else {
-                        sim::pc = sim::ready(*sim::pc + 1);
-                    }
-                    sim::decode_buffer.push_back({*sim::pc, encoded});
+                [](const sim::encoded_insn& encoded) {
+                    sim::decode_buffer.push_back(std::move(encoded));
+                    sim::pc = sim::ready(*sim::pc + 1);
                     return false; // don't break; keep fetching
                 },
                 [](sim::word data) {
@@ -56,11 +43,7 @@ void sim::fetch() {
 
 void sim::decode() {
     while (!decode_buffer.empty() && !insn_queue.full()) {
-        std::unique_ptr<sim::insn> decoded = sim::decode_at (
-            std::get<sim::encoded_insn>(decode_buffer.front().second),
-            decode_buffer.front().first
-        );
-        //fmt::print("  decoding: {}\n", decoded.head);
+        sim::insn decoded = std::move(decode_buffer.front());
         insn_queue.push_back(std::move(decoded));
         decode_buffer.pop_front();
     }
@@ -68,7 +51,7 @@ void sim::decode() {
 
 void sim::issue() {
     while(!insn_queue.empty() && !rob.full()) {
-        if (sim::insn_queue.front()->try_issue()) {
+        if (sim::try_issue(insn_queue.front())) {
             insn_queue.pop_front();
         } else {
             break;

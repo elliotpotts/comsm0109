@@ -12,51 +12,45 @@
 #include <memory>
 
 namespace sim {
-    struct insn {
-        virtual bool try_issue() const = 0;
-        virtual ~insn() = default;
-    };
-
-    struct add : public insn {
+    struct add {
         encoded_operand lhs;
         encoded_operand rhs;
         areg dst;
         add(encoded_operand, encoded_operand, areg);
-        virtual bool try_issue() const override;
+        bool try_issue() const;
     };
 
-    struct ldw : public insn {
+    struct ldw {
         encoded_operand address;
         areg dst;
         ldw(encoded_operand, areg);
-        virtual bool try_issue() const override;
+        bool try_issue() const;
     };
 
-    struct stw : public insn {
+    struct stw {
         encoded_operand data;
         encoded_operand address;
         stw(encoded_operand, encoded_operand);
-        virtual bool try_issue() const override;
+        bool try_issue() const;
     };
 
-    struct jeq : public insn {
+    struct jeq  {
         encoded_operand lhs;
         encoded_operand rhs;
         encoded_operand offset;
         jeq(encoded_operand, encoded_operand, encoded_operand);
-        virtual bool try_issue() const override;
+        bool try_issue() const;
     };
     
-    struct halt : public insn {
-        virtual bool try_issue() const override;
+    struct halt {
+        bool try_issue() const;
     };
 
-    struct encoded_insn {
-        sim::opcode head;
-        std::vector<encoded_operand> tail;
-    };
+    using insn = std::variant<add, ldw, stw, jeq, halt>;
+    bool try_issue(const insn&);
 
-    std::unique_ptr<insn> decode_at(encoded_insn, addr_t);
+    using encoded_insn = insn;
+    //std::unique_ptr<insn> decode_at(encoded_insn, addr_t);
 }
 
 #endif
