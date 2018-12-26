@@ -49,10 +49,24 @@ namespace sim {
         promise() : result(std::make_shared<std::optional<T>>()) {
         }
         void fulfil(T value) {
-            *result = value;
+            if (*this) {
+                throw std::runtime_error("Fulfilled promise cannot be fulfilled again.");
+            } else {
+                *result = value;
+            }
         }
         future<T> anticipate() {
             return future<T>{result};
+        }
+
+        explicit operator bool() const {
+            return result->has_value();
+        }
+        const T& operator*() const {
+            return **result;
+        }
+        T& operator*() {
+            return **result;
         }
     };
 }
@@ -69,6 +83,20 @@ namespace fmt {
                 return format_to(ctx.begin(), "{}", *f);
             } else {
                 return format_to(ctx.begin(), "⧗");
+            }
+        }
+    };
+    template <typename T>
+    struct formatter<sim::promise<T>> {
+        template <typename ParseContext>
+        constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+        template <typename FormatContext>
+        auto format(const sim::promise<T> &p, FormatContext &ctx) {
+            if (p) {
+                return format_to(ctx.begin(), "{}", *p);
+            } else {
+                return format_to(ctx.begin(), "□");
             }
         }
     };

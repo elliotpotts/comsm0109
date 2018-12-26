@@ -20,7 +20,7 @@ namespace sim {
     const inline int pipeline_width = 6;
     inline future<addr_t> pc = ready(0);
 
-    inline std::vector<memcell> main_memory(1024 * 1024, 42);
+    inline std::vector<memcell> main_memory(1024 * 1024, 0);
     //   Fetch ⭣
     inline boost::circular_buffer<std::pair<addr_t, memcell>> decode_buffer { pipeline_width };
     //  Decode ⭣
@@ -30,7 +30,7 @@ namespace sim {
     inline boost::circular_buffer<load_store> lsq {20};
     inline std::vector<std::optional<std::unique_ptr<reservation>>> res_stn {36};
     // Execute ⭣
-    inline std::vector<execution_unit> execution_units(2);
+    inline std::vector<std::unique_ptr<execution_unit>> execution_units;
     inline boost::circular_buffer<commitment> rob {40};
     //  Commit ⭣
     inline std::map<areg, word> crf; // ⭢⭡

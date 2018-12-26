@@ -9,7 +9,7 @@ sim::trap::trap() : std::runtime_error("execution halted") {
 bool sim::ready(sim::commitment commit) {
     return std::visit(match {
         [](writeback wb) { return wb.value.ready(); },
-        [](store st) { return st.data.ready() && st.addr.ready(); },
+        [](store st) { return false && st.data.ready() && st.addr.ready(); },
         [](branch b) { return false && b.taken.ready()
                            && ((*b.taken == 1 && b.tru_offset.ready())
                            ||  (*b.taken == 0 && b.fls_offset.ready())); },

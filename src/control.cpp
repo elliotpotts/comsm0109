@@ -63,14 +63,15 @@ void sim::issue() {
 }
 
 void sim::execute() {
+    forward_stores();
     for (auto& eu : sim::execution_units) {
-        eu.dispatch();
+        eu->start();
     }
     for (auto& eu : sim::execution_units) {
-        eu.work();
+        eu->work();
     }
     for (auto& eu : sim::execution_units) {
-        eu.broadcast();
+        eu->finish();
     }
 }
 

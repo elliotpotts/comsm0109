@@ -13,7 +13,7 @@ bool sim::add_res::ready() {
     return lhs.ready() && rhs.ready();
 }
 int sim::add_res::worktime() {
-    return 1;
+    return 4;
 }
 void sim::add_res::execute() {
     sum.fulfil(*lhs + *rhs);

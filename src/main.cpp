@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <fmt/format.h>
 #include <sim/reorder_buffer.hpp>
+#include <sim/lsq.hpp>
 #include <variant>
 
 void summarise() {
@@ -17,11 +18,19 @@ void summarise() {
     for(const sim::commitment& commit : sim::rob) {
         fmt::print("    {}\n", commit);
     }
+    fmt::print(" {:2}/{} items in load store queue\n", sim::lsq.size(), sim::lsq.capacity());
+    for(const sim::load_store& ls : sim::lsq) {
+        fmt::print("    {}\n", ls);
+    }
 }
 
 int main() {
-    sim::crf[sim::areg::g0] = 1;
-    sim::crf[sim::areg::g1] = 2;
+    sim::execution_units.push_back(std::make_unique<sim::alu>());
+    sim::execution_units.push_back(std::make_unique<sim::alu>());
+    sim::execution_units.push_back(std::make_unique<sim::lunit>());
+
+    sim::crf[sim::areg::g0] = 3;
+    sim::crf[sim::areg::g1] = 30;
     sim::crf[sim::areg::g2] = 0;
     sim::crf[sim::areg::g3] = 0;
     sim::crf[sim::areg::g4] = 6;
@@ -29,16 +38,17 @@ int main() {
     sim::pc = sim::ready(0x0);
     auto mem = sim::main_memory.begin();
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g0, sim::areg::g1, sim::areg::g2}};
-    *mem++ = sim::encoded_insn {sim::opcode::stw, {17, 6}};
-    *mem++ = sim::encoded_insn {sim::opcode::ldw, {sim::areg::g4, sim::areg::g4}};
-    *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g0, sim::areg::g2, sim::areg::g3}};
-    *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g2, sim::areg::g3, sim::areg::g0}};
-    *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g4, sim::areg::g4, sim::areg::g4}};
+    *mem++ = sim::encoded_insn {sim::opcode::stw, {100, 0x6}};
+    *mem++ = sim::encoded_insn {sim::opcode::stw, {42, sim::areg::g2}};
+    *mem++ = sim::encoded_insn {sim::opcode::ldw, {0x6, sim::areg::g4}};
+    //*mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g0, sim::areg::g2, sim::areg::g3}};
+    //*mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g2, sim::areg::g3, sim::areg::g0}};
+    //*mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g4, sim::areg::g4, sim::areg::g4}};
     *mem++ = sim::encoded_insn {sim::opcode::halt};
 
-    
+    int max_cycles = 10;
     try {
-        while (true) {
+        while (true && sim::t < max_cycles) {
             summarise();
             sim::tick();
         }

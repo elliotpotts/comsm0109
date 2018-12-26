@@ -36,8 +36,9 @@ sim::stw::stw(encoded_operand data, encoded_operand address):
 bool sim::stw::try_issue() const {
     if (sim::lsq.full() || sim::rob.full()) return false;
 
-    sim::lsq.push_back(store { sim::resolve_op(data), sim::resolve_op(address) });
-    sim::rob.push_back(store { sim::resolve_op(data), sim::resolve_op(address) });
+    auto st = store { sim::resolve_op(data), sim::resolve_op(address), std::make_shared<bool>(false) };
+    sim::lsq.push_back(st);
+    sim::rob.push_back(st);
     return true;
 }
 
