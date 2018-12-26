@@ -23,9 +23,14 @@ sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
 void sim::fetch() {
     if (pc) {
         while (!decode_buffer.full()
+            && sim::pc
             && *sim::pc < static_cast<sim::addr_t>(sim::main_memory.size())) {
             if (std::visit( match {
                 [](sim::encoded_insn encoded) {
+                    //pre-decode to see if we just fetched a branch
+                    std::unique_ptr<insn> decoded = decode_at(encoded, *sim::pc);
+                    
+
                     sim::decode_buffer.push_back({*sim::pc, encoded});
                     sim::pc = sim::ready(*sim::pc + 1);
                     return false;

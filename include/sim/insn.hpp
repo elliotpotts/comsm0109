@@ -39,10 +39,11 @@ namespace sim {
         virtual bool try_issue() const override;
     };
 
-    struct jnz : public insn {
+    struct jeq : public insn {
         encoded_operand lhs;
+        encoded_operand rhs;
         encoded_operand offset;
-        jnz(encoded_operand, encoded_operand);
+        jeq(encoded_operand, encoded_operand, encoded_operand);
         virtual bool try_issue() const override;
     };
     

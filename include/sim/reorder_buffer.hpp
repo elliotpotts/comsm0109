@@ -17,9 +17,10 @@ namespace sim {
         areg dest;
     };
     struct branch {
-        future<addr_t> tru_offset;
-        future<addr_t> fls_offset;
-        future<addr_t> taken; // take branch when value != 0. todo: some better way
+        future<addr_t> sat_offset;
+        future<addr_t> unsat_offset;
+        future<bool> predicted;
+        future<bool> actual;
     };
     struct trap : public std::runtime_error {
         trap();
@@ -46,7 +47,12 @@ namespace fmt {
                     return format_to(ctx.begin(), "[{}] ⭠ {}", st.addr, st.data);
                 },
                 [&](const sim::branch& br) {
-                    return format_to(ctx.begin(), "branch to +{} if {}", br.tru_offset, br.taken);
+                    return format_to (
+                        ctx.begin(),
+                        "branch to {} or {}. predicted {}, actual {}", 
+                        br.sat_offset, br.unsat_offset,
+                        br.predicted, br.actual
+                    );
                 },
                 [&](const sim::trap& t) {
                     return format_to(ctx.begin(), "<trap>");

@@ -42,17 +42,17 @@ bool sim::stw::try_issue() const {
     return true;
 }
 
-sim::jnz::jnz(encoded_operand lhs, encoded_operand offset):
-    lhs{lhs}, offset{offset} {
+sim::jeq::jeq(encoded_operand lhs, encoded_operand rhs, encoded_operand offset):
+    lhs{lhs}, rhs{rhs}, offset{offset} {
 }
-bool sim::jnz::try_issue() const {
+bool sim::jeq::try_issue() const {
     if (sim::rob.full()) return false;
 
-    sim::rob.push_back(branch {
+    /*sim::rob.push_back(branch {
         sim::resolve_op(offset), //tru_offset
         sim::ready(0), //fls_offset
         sim::resolve_op(lhs) //taken
-    });
+    });*/
     return true;
 }
 
@@ -79,9 +79,10 @@ std::unique_ptr<sim::insn> sim::decode_at(sim::encoded_insn encoded, addr_t addr
             encoded.tail[0],
             encoded.tail[1]
         );
-        case opcode::jnz: return std::make_unique<sim::jnz> (
+        case opcode::jeq: return std::make_unique<sim::jeq> (
             encoded.tail[0],
-            encoded.tail[1]
+            encoded.tail[1],
+            encoded.tail[2]
         );
         case opcode::halt: return std::make_unique<sim::halt>();
         default: throw std::runtime_error("error decoding: unkown opcode");

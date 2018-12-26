@@ -7,7 +7,7 @@ namespace sim {
         cmp,
         ldw,
         stw,
-        jnz,
+        jeq,
         halt
     };
     //bool is_load(opcode oc);
@@ -25,7 +25,7 @@ struct fmt::formatter<sim::opcode> : formatter<std::string_view> {
             case sim::opcode::cmp:  name = "cmp";  break;
             case sim::opcode::ldw:  name = "ldw";  break;
             case sim::opcode::stw:  name = "stw";  break;
-            case sim::opcode::jnz:  name = "jnz";  break;
+            case sim::opcode::jeq:  name = "jeq";  break;
             case sim::opcode::halt: name = "halt"; break;
         }
         return formatter<std::string_view>::format(name, ctx);
