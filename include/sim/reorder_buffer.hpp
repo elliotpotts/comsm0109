@@ -8,6 +8,8 @@
 #include <sim/insn.hpp>
 #include <sim/lsq.hpp>
 #include <sim/util.hpp>
+#include <stdexcept>
+#include <string>
 
 namespace sim {
     struct writeback {
@@ -19,10 +21,12 @@ namespace sim {
         future<addr_t> fls_offset;
         future<addr_t> taken; // take branch when value != 0. todo: some better way
     };
-    struct trap {
+    struct trap : public std::runtime_error {
+        trap();
     };
     using commitment = std::variant<writeback, store, branch, trap>;
     bool ready(commitment);
+    void commit(commitment);
 }
 
 #include <fmt/format.h>

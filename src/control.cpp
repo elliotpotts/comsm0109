@@ -72,45 +72,19 @@ void sim::execute() {
     for (auto& eu : sim::execution_units) {
         eu.broadcast();
     }
-    /*
-    // Work
-    for (auto& eu : sim::execution_units) {
-        eu.work();
-    }
-    // Dispatch
-    for (std::optional<sim::reservation>& slot : sim::res_stn) {
-        if (slot && slot->ready()) {
-            if (auto eu_it = std::find_if(sim::execution_units.begin(),
-                                          sim::execution_units.end(),
-                                          [&] (const sim::execution_unit& eu) { return eu.can_start(*slot); });
-                    eu_it != sim::execution_units.end())
-                    {
-                eu_it->start(*slot);
-                slot.reset();
-            }
-        }
-    }*/
 }
 
-void sim::commit() {/*
-    int commits_left = 6;
+void sim::commit() {
+    int commits_left = sim::pipeline_width;
     while (!rob.empty() && commits_left > 0) {
-        if (sim::ready(sim::rob.front().commit)) {
+        if (sim::ready(sim::rob.front())) {
             commits_left--;
-            reorder in_order = rob.front();
-            fmt::print(" committing: {}\n", in_order.insn);
-            rob.pop_front();
-            std::visit( match {
-                [](writeback wb) { sim::crf[wb.dest] = *wb.value; }, 
-                [](store st) { sim::main_memory[*st.dest] = *st.value; },
-                [](branch b) { throw std::runtime_error("Can't handle branch"); },
-                [](halt h) { throw std::runtime_error("Halted"); },
-                [](std::monostate) {}
-            }, in_order.commit);
+            sim::commit(sim::rob.front());
+            sim::rob.pop_front();
         } else {
             break;
         }
-    }*/
+    }
 }
 
 void sim::tick() {

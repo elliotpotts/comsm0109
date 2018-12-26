@@ -10,18 +10,6 @@ namespace sim {
     };
     using word = std::int32_t;
     using addr_t = int;
-
-    /*template<typename T>
-    struct located {
-        int address;
-        T value;
-        T operator*() const {
-            return value;
-        }
-        const T* operator->() const {
-            return &value;
-        }
-    };*/
 }
 
 #include <fmt/format.h>

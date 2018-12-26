@@ -57,22 +57,5 @@ namespace sim {
 
     std::unique_ptr<insn> decode_at(encoded_insn, addr_t);
 }
-/*
-namespace fmt {
-    template <>
-    struct formatter<sim::live_insn> {
-        template <typename ParseContext>
-        constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
-
-        template <typename FormatContext>
-        auto format(sim::live_insn insn, FormatContext &ctx) {
-            auto it = format_to(ctx.begin(), "@{}({}", insn.timestamp);
-            for(auto op : insn.operands) {
-                it = format_to(it, " {}", op);
-            }
-            return format_to(it, ")");
-        }
-    };
-}*/
 
 #endif

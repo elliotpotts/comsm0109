@@ -29,20 +29,24 @@ int main() {
     sim::pc = sim::ready(0x0);
     auto mem = sim::main_memory.begin();
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g0, sim::areg::g1, sim::areg::g2}};
-    //*mem++ = sim::encoded_insn {sim::opcode::stw, {17, 6}};
-    //*mem++ = sim::encoded_insn {sim::opcode::ldw, {sim::areg::g4, sim::areg::g4}};
+    *mem++ = sim::encoded_insn {sim::opcode::stw, {17, 6}};
+    *mem++ = sim::encoded_insn {sim::opcode::ldw, {sim::areg::g4, sim::areg::g4}};
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g0, sim::areg::g2, sim::areg::g3}};
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g2, sim::areg::g3, sim::areg::g0}};
     *mem++ = sim::encoded_insn {sim::opcode::add, {sim::areg::g4, sim::areg::g4, sim::areg::g4}};
     *mem++ = sim::encoded_insn {sim::opcode::halt};
 
-    for(int i = 0; i < 7;  i++) {
-        //fmt::print("----------- t = {}\n", sim::t);
-        summarise();
-        sim::tick();
-    }
-    for(auto pair : sim::crf) {
-        fmt::print("   {} = {}\n", pair.first, pair.second);
+    
+    try {
+        while (true) {
+            summarise();
+            sim::tick();
+        }
+    } catch (const sim::trap& t) {
+        fmt::print("\n\n\n EXECUTION HALTED\n");
+        for(auto pair : sim::crf) {
+            fmt::print("   {} = {}\n", pair.first, pair.second);
+        }
     }
     
     return 0;
