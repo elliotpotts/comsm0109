@@ -19,6 +19,11 @@ namespace sim {
     }
 
     template<typename T>
+    future<T> never() {
+        return {std::make_shared<std::optional<T>>(std::nullopt)};
+    }
+
+    template<typename T>
     class future {
         std::shared_ptr<std::optional<T>> result;
         future(std::shared_ptr<std::optional<T>> result) : result(result) {
@@ -26,6 +31,7 @@ namespace sim {
     public:
         friend future<T> promise<T>::anticipate();
         friend future<T> ready<>(T);
+        friend future<T> never<T>();
         bool ready() const {
             return result->has_value();
         }

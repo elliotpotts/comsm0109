@@ -29,14 +29,23 @@ void sim::fetch() {
                 [](sim::encoded_insn encoded) {
                     //pre-decode to see if we just fetched a branch
                     std::unique_ptr<insn> decoded = decode_at(encoded, *sim::pc);
-                    
-
+                    if (auto* br = dynamic_cast<sim::jeq*>(decoded.get()); br) {
+                        std::visit( match {
+                            [](const sim::word offset) {
+                                sim::pc = sim::ready(*sim::pc + offset);
+                            },
+                            [](const sim::areg reg) {
+                                sim::pc = sim::never<sim::addr_t>();
+                            } 
+                        }, br->offset);
+                    } else {
+                        sim::pc = sim::ready(*sim::pc + 1);
+                    }
                     sim::decode_buffer.push_back({*sim::pc, encoded});
-                    sim::pc = sim::ready(*sim::pc + 1);
-                    return false;
+                    return false; // don't break; keep fetching
                 },
                 [](sim::word data) {
-                    return true;
+                    return true; // break; stop fetching
                 }
             }, sim::main_memory[*sim::pc])) {
                 break;
