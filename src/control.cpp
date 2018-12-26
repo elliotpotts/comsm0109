@@ -27,8 +27,16 @@ void sim::fetch() {
             && *sim::pc < static_cast<sim::addr_t>(sim::main_memory.size())) {
             if (std::visit( match {
                 [](const sim::encoded_insn& encoded) {
-                    sim::decode_buffer.push_back(std::move(encoded));
-                    sim::pc = sim::ready(*sim::pc + 1);
+                    // pre-decode to see if we hit a branch
+                    if (auto br_ptr = std::get_if<sim::jeq>(&encoded); br_ptr) {
+                        sim::pc = std::visit( match {
+                            [](const sim::word offset) { return sim::ready(*sim::pc + offset); },
+                            [](const sim::areg reg) { return sim::never<sim::addr_t>(); }
+                        }, br_ptr->offset);
+                    } else {
+                        sim::pc = sim::ready(*sim::pc + 1);
+                    }
+                    sim::decode_buffer.push_back(encoded);
                     return false; // don't break; keep fetching
                 },
                 [](sim::word data) {
