@@ -24,11 +24,11 @@ bool sim::commit(const sim::commitment& commit) {
     return std::visit(match {
         [](const writeback& wb) {
             sim::crf[wb.dest] = *wb.value;
-            return true;
+            return false;
         },
         [](const store& st) {
             sim::main_memory[*st.addr] = *st.data;
-            return true;
+            return false;
         },
         [](const branch& b) {
             if (*b.predicted != *b.actual) {
@@ -38,9 +38,9 @@ bool sim::commit(const sim::commitment& commit) {
                 } else {
                     sim::pc = *b.unsat_offset;
                 }
-                return false;
-            } else {
                 return true;
+            } else {
+                return false;
             }
         },
         [](const trap& t) { throw t; return false; }

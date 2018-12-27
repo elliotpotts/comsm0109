@@ -6,13 +6,26 @@
 #include <variant>
 #include <random>
 #include <iterator>
+using namespace sim;
 
 int main() {
-    std::vector<sim::memcell> image;
+    std::vector<memcell> image = {
+        -79, -29, 83, 36, -20, 84, 18, -32, 89, -35, 85, -44, -6, -75, 66, -10, -46, 0,
+        3, -60, 47, 40, -11, 90, -5, 89, -33, 32, 52, 82, 85, 66, -77, -17, 97, 54, -97,
+        -35, -25, 19, -96, -70, -83, -53, -34, -70, 79, -48, -32, -10
+    };
+    int start = image.size();
     auto m = std::back_inserter(image);
-    m++ = sim::ldw { 0x02, sim::areg::g0 };
-    m++ = sim::halt {};
-    m++ = 42;
+    const areg i = areg::g0;
+    const areg accum = areg::g1;
+    const areg x = areg::g2;
+    const areg ord = areg::g3;
+    m++ = ldw {i, x};
+    m++ = add {x, accum, accum};
+    m++ = add {i, 1, i};
+    m++ = cmp {i, start, ord};
+    m++ = jeq {ord, -1, -4};
+    m++ = halt {};
 
     sim::config cfg = {
         .order = 1,
@@ -24,7 +37,15 @@ int main() {
         .sunit_count = 1,
         .name = "In Order"
     };
-    sim::reset (cfg, image, 0);
-    sim::run_until_halt();
+    sim::reset (cfg, image, start);
+    try {
+        while (true) {
+            sim::tick();
+            sim::pdebug();
+        }
+    } catch (const sim::trap&) {
+        fmt::print("E X E C U T I O N   H A L T E D\n");
+        fmt::print("{}\n", crf[accum]);
+    }
     return 0;
 }

@@ -23,6 +23,7 @@ namespace sim {
     };
     using load_store = std::variant<load, store>;
     void forward_stores();
+    void dismiss_loads();
 }
 
 #include <fmt/format.h>

@@ -38,3 +38,15 @@ void sim::forward_stores() {
         }
     }
 }
+
+void sim::dismiss_loads() {
+    while (!sim::lsq.empty()) {
+        if (auto ld_ptr = std::get_if<sim::load>(&sim::lsq.front());
+           ld_ptr && ld_ptr->data)
+           {
+            sim::lsq.pop_front();
+        } else {
+            break;
+        }
+    }
+}

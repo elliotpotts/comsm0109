@@ -23,6 +23,7 @@ std::map<sim::areg, sim::word> sim::crf;
 void sim::reset(sim::config cfg, const std::vector<sim::memcell>& image, addr_t start) {
     sim::cc = 0;
     sim::pc = start;
+    sim::main_memory = image;
     sim::decode_buffer.clear();
     sim::decode_buffer.set_capacity(cfg.order);
     sim::insn_queue.clear();
@@ -32,7 +33,6 @@ void sim::reset(sim::config cfg, const std::vector<sim::memcell>& image, addr_t 
     sim::lsq.set_capacity(cfg.lsq_length);
     sim::res_stn.clear();
     sim::res_stn.resize(cfg.res_stn_count);
-    sim::rob = boost::circular_buffer<sim::commitment>{ static_cast<unsigned>(cfg.rob_length) };
     sim::execution_units.clear();
     for(int i = 0; i < cfg.alu_count; i++)
         sim::execution_units.push_back(std::make_unique<sim::alu>());
@@ -40,7 +40,8 @@ void sim::reset(sim::config cfg, const std::vector<sim::memcell>& image, addr_t 
         sim::execution_units.push_back(std::make_unique<sim::lunit>());
     for(int i = 0; i < cfg.sunit_count; i++)
         sim::execution_units.push_back(std::make_unique<sim::sunit>());
-    sim::main_memory = image;
+    sim::rob = boost::circular_buffer<sim::commitment>{ static_cast<unsigned>(cfg.rob_length) };
+    sim::crf.clear();
 }
 
 void sim::run_until_halt() {
@@ -89,7 +90,9 @@ void sim::flush() {
     sim::insn_queue.clear();
     sim::rat.clear();
     sim::lsq.clear();
-    sim::res_stn.clear();
+    for(auto& stn : sim::res_stn) {
+        stn.reset();
+    }
     for(auto& eu : sim::execution_units) {
         eu->cancel();
     }
@@ -159,6 +162,7 @@ void sim::issue() {
 
 void sim::execute() {
     forward_stores();
+    dismiss_loads();
     for (auto& eu : sim::execution_units) {
         eu->start();
     }
@@ -176,6 +180,8 @@ void sim::commit() {
         if (sim::ready(sim::rob.front())) {
             commits_left--;
             if(sim::commit(sim::rob.front())) {
+                break;
+            } else {
                 sim::rob.pop_front();
             }
         } else {
