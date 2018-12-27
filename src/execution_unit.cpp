@@ -61,7 +61,11 @@ void sim::lunit::work() {
 void sim::lunit::finish() {
     if (!executing) return;
     if (ticks_left <= 0) {
-        executing->data.fulfil(std::get<sim::addr_t>(sim::main_memory.at(*executing->addr)));
+        try {
+            executing->data.fulfil(std::get<sim::addr_t>(sim::main_memory.at(*executing->addr)));
+        } catch (const std::exception& e) {
+            executing->data.error(e);
+        }
         executing->loader = nullptr;
         executing = nullptr;
     }

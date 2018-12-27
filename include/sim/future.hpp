@@ -15,25 +15,28 @@ namespace sim {
 
     template<typename T>
     future<T> ready(T value) {
-        return {std::make_shared<std::optional<T>>(value)};
+        return {std::make_shared<std::optional<T>>(value), {}};
     }
 
     template<typename T>
     future<T> never() {
-        return {std::make_shared<std::optional<T>>(std::nullopt)};
+        return {std::make_shared<std::optional<T>>(std::nullopt), {}};
     }
 
     template<typename T>
     class future {
         std::shared_ptr<std::optional<T>> result;
-        future(std::shared_ptr<std::optional<T>> result) : result(result) {
+        std::shared_ptr<std::exception> exception;
+        future(std::shared_ptr<std::optional<T>> result
+              ,std::shared_ptr<std::exception> exception):
+              result{result}, exception{exception} {
         }
     public:
         friend future<T> promise<T>::anticipate();
         friend future<T> ready<>(T);
         friend future<T> never<T>();
         bool ready() const {
-            return result->has_value();
+            return result->has_value() || exception;
         }
         explicit operator bool() const {
             return ready();
@@ -51,6 +54,7 @@ namespace sim {
     class promise {
         friend class future<T>;
         std::shared_ptr<std::optional<T>> result;
+        std::shared_ptr<std::exception> exception;
     public:
         promise() : result(std::make_shared<std::optional<T>>()) {
         }
@@ -61,12 +65,15 @@ namespace sim {
                 *result = value;
             }
         }
+        void error(const std::exception& e) {
+            exception = std::make_shared<std::exception>(e);
+        }
         future<T> anticipate() {
-            return future<T>{result};
+            return future<T>{result, exception};
         }
 
         explicit operator bool() const {
-            return result->has_value();
+            return result->has_value() || exception;
         }
         const T& operator*() const {
             return **result;

@@ -37,7 +37,7 @@ namespace fmt {
         auto format(const sim::load_store& commit, FormatContext &ctx) {
             return std::visit( match {
                 [&](const sim::load& ld) {
-                    return format_to(ctx.begin(), "{} ⭠ {}", ld.addr, ld.data);
+                    return format_to(ctx.begin(), "{}:  {}", ld.addr, ld.data);
                 },
                 [&](const sim::store& st) {
                     return format_to(ctx.begin(), "{} ⭠ {}", st.addr, st.data);
