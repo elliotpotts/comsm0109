@@ -47,7 +47,7 @@ namespace sim {
         encoded_operand rhs;
         encoded_operand offset;
         bool predicted = false;
-        addr_t origin = 0x0;
+        addr_t origin = 0xdeadbeef;
         jeq(encoded_operand, encoded_operand, encoded_operand);
         bool try_issue() const;
     };

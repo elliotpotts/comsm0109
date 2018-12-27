@@ -6,6 +6,7 @@
 #include <sim/insn.hpp>
 #include <algorithm>
 #include <iterator>
+#include <variant>
 
 sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
     return std::visit(match {
@@ -21,28 +22,42 @@ sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
 }
 
 void sim::fetch() {
-    if (pc) {
+    if (true) {
         while (!decode_buffer.full()
-            && sim::pc
-            && *sim::pc < static_cast<sim::addr_t>(sim::main_memory.size())) {
-            if (std::visit( match {
-                [](const sim::encoded_insn& encoded) {
+            && sim::pc < static_cast<sim::addr_t>(sim::main_memory.size())) {
+            bool stop_fetching = false;
+            std::visit ( match {
+                [&](sim::word data) {
+                    stop_fetching = true; // stop fetching
+                },
+                [&](sim::encoded_insn& encoded) {
                     // pre-decode to see if we hit a branch
                     if (auto br_ptr = std::get_if<sim::jeq>(&encoded); br_ptr) {
-                        sim::pc = std::visit( match {
-                            [](const sim::word offset) { return sim::ready(*sim::pc + offset); },
-                            [](const sim::areg reg) { return sim::never<sim::addr_t>(); }
+                        br_ptr->origin = sim::pc;
+                        return std::visit( match {
+                            [&](const sim::word offset) {
+                                // TODO: improve branch prediction
+                                if (offset < 0) {
+                                    sim::pc += offset;
+                                    br_ptr->predicted = true;
+                                } else {
+                                    sim::pc++;
+                                    br_ptr->predicted = false;
+                                }
+                                sim::decode_buffer.push_back(encoded);
+                            },
+                            [&](const sim::areg reg) {
+                                throw std::runtime_error("can't deal with reg dst");
+                                stop_fetching = true; // stall until we have the address
+                            }
                         }, br_ptr->offset);
                     } else {
-                        sim::pc = sim::ready(*sim::pc + 1);
+                        sim::pc = sim::pc + 1;
+                        sim::decode_buffer.push_back(encoded);
                     }
-                    sim::decode_buffer.push_back(encoded);
-                    return false; // don't break; keep fetching
-                },
-                [](sim::word data) {
-                    return true; // break; stop fetching
                 }
-            }, sim::main_memory[*sim::pc])) {
+            }, sim::main_memory[sim::pc]);
+            if (stop_fetching) {
                 break;
             };
         }

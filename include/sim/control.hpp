@@ -18,7 +18,7 @@ namespace sim {
     inline int t = 0;
     inline int cc = 0;
     const inline int pipeline_width = 6;
-    inline future<addr_t> pc = ready(0);
+    inline addr_t pc = 0;
 
     inline std::vector<memcell> main_memory(1024 * 1024);
     //   Fetch ⭣
@@ -34,7 +34,7 @@ namespace sim {
     inline boost::circular_buffer<commitment> rob {40};
     //  Commit ⭣
     inline std::map<areg, word> crf; // ⭢⭡
-    
+
     void fetch();
     void decode();
     void issue();

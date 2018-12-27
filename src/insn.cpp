@@ -70,9 +70,9 @@ bool sim::jeq::try_issue() const {
 
     jeq_res res {lhs, rhs};
     sim::rob.push_back( branch {
-        sim::resolve_op(offset),
+        sim::resolve_op(origin + std::get<sim::word>(offset)),
         sim::ready(origin + 1),
-        sim::never<bool>(), //TODO;
+        sim::ready(predicted), //TODO; what if there is no prediction yet?
         res.equal.anticipate()
     });
     res_ptr->emplace(std::move(res));

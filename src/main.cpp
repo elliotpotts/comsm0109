@@ -27,26 +27,26 @@ void summarise() {
 int main() {
     sim::execution_units.push_back(std::make_unique<sim::alu>());
     sim::execution_units.push_back(std::make_unique<sim::alu>());
+    sim::execution_units.push_back(std::make_unique<sim::alu>());
     sim::execution_units.push_back(std::make_unique<sim::lunit>());
 
-    sim::crf[sim::areg::g0] = 3;
-    sim::crf[sim::areg::g1] = 30;
-    sim::crf[sim::areg::g2] = 0;
-    sim::crf[sim::areg::g3] = 0;
-    sim::crf[sim::areg::g4] = 6;
-    sim::main_memory[0x6] = 42;
-    sim::pc = sim::ready(0x0);
+    sim::pc = 0x0;
     auto mem = sim::main_memory.begin();
-    *mem++ = sim::cmp {sim::areg::g0, sim::areg::g1, sim::areg::g2};
-    //*mem++ = sim::stw {100, 0x6};
-    //*mem++ = sim::stw {42, sim::areg::g2};
-    //*mem++ = sim::ldw {0x6, sim::areg::g4};
-    //*mem++ = sim::add {sim::areg::g0, sim::areg::g2, sim::areg::g3};
-    //*mem++ = sim::add {sim::areg::g2, sim::areg::g3, sim::areg::g0};
-    //*mem++ = sim::add {sim::areg::g4, sim::areg::g4, sim::areg::g4};
+    // calculate 2*6 by repeated addition
+    *mem++ = sim::add {0, 0, sim::areg::g4 }; // nop
+    *mem++ = sim::add {0, 0, sim::areg::g0 }; // g0 = 0; loop counter
+    *mem++ = sim::add {0, 0, sim::areg::g1 }; // g1 = 0; comparison result
+    *mem++ = sim::add {0, 2, sim::areg::g2 }; // g2 = 2; accumulator
+    // for (g0 = 0; g0 != 6; g0++) {
+    //*mem++ = sim::cmp {sim::areg::g0, 6, sim::areg::g1};
+    //*mem++ = sim::jeq {sim::areg::g1, -1, todo};
+        *mem++ = sim::add {sim::areg::g2,  2, sim::areg::g2};
+        *mem++ = sim::add {sim::areg::g0,  1, sim::areg::g0};
+        *mem++ = sim::cmp {sim::areg::g0,  6, sim::areg::g1};
+        *mem++ = sim::jeq {sim::areg::g1, -1, -3};
     *mem++ = sim::halt {};
 
-    int max_cycles = 10;
+    int max_cycles = 100;
     try {
         while (true && sim::t < max_cycles) {
             summarise();

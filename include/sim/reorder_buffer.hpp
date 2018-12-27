@@ -26,8 +26,8 @@ namespace sim {
         trap();
     };
     using commitment = std::variant<writeback, store, branch, trap>;
-    bool ready(commitment);
-    void commit(commitment);
+    bool ready(const commitment&);
+    void commit(const commitment&);
 }
 
 #include <fmt/format.h>

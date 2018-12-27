@@ -24,7 +24,6 @@ namespace sim {
         virtual void finish() override;
     };
 
-    void forward_stores();
     class lunit : public execution_unit {
         load* executing;
         int ticks_left;
