@@ -9,7 +9,7 @@ sim::trap::trap() : std::runtime_error("execution halted") {
 bool sim::ready(const sim::commitment& commit) {
     return std::visit(match {
         [](const writeback& wb) { return wb.value.ready(); },
-        [](const store& st) { return false && st.data.ready() && st.addr.ready(); },
+        [](const store& st) { return st.data.ready() && st.addr.ready() && st.committed; },
         [](const branch& b) { 
             return b.sat_offset
                 && b.unsat_offset
@@ -24,11 +24,11 @@ bool sim::commit(const sim::commitment& commit) {
     return std::visit(match {
         [](const writeback& wb) {
             sim::crf[wb.dest] = *wb.value;
-            return false;
+            return true;
         },
         [](const store& st) {
             sim::main_memory[*st.addr] = *st.data;
-            return false;
+            return true;
         },
         [](const branch& b) {
             if (*b.predicted != *b.actual) {
@@ -38,9 +38,9 @@ bool sim::commit(const sim::commitment& commit) {
                 } else {
                     sim::pc = *b.unsat_offset;
                 }
-                return true;
-            } else {
                 return false;
+            } else {
+                return true;
             }
         },
         [](const trap& t) { throw t; return false; }

@@ -9,6 +9,7 @@
 
 namespace sim {
     struct execution_unit {
+        virtual void cancel() = 0;
         virtual void start() = 0;
         virtual void work() = 0;
         virtual void finish() = 0;
@@ -19,6 +20,7 @@ namespace sim {
         std::optional<reservation> executing;
         int ticks_left;
     public:
+        virtual void cancel() override;
         virtual void start() override;
         virtual void work() override;
         virtual void finish() override;
@@ -28,7 +30,7 @@ namespace sim {
         load* executing;
         int ticks_left;
     public:
-        void cancel();
+        virtual void cancel() override;
         virtual void start() override;
         virtual void work() override;
         virtual void finish() override;
@@ -36,9 +38,10 @@ namespace sim {
     };
 
     class sunit : public execution_unit {
-        std::optional<store> executing;
+        store* executing;
         int ticks_left;
     public:
+        virtual void cancel() override;
         virtual void start() override;
         virtual void work() override;
         virtual void finish() override;

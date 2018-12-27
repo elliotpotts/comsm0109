@@ -111,9 +111,6 @@ void sim::commit() {
         if (sim::ready(sim::rob.front())) {
             commits_left--;
             if(sim::commit(sim::rob.front())) {
-                // we just flushed the pipeline
-                break;
-            } else {
                 sim::rob.pop_front();
             }
         } else {

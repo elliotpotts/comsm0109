@@ -14,10 +14,12 @@ namespace sim {
         promise<word> data;
         lunit* loader = nullptr;
     };
+    struct sunit;
     struct store {
         future<word> data;
         future<addr_t> addr;
-        std::shared_ptr<bool> committed;
+        sunit* storer = nullptr;
+        bool committed = false;
     };
     using load_store = std::variant<load, store>;
     void forward_stores();
