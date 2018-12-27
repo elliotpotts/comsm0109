@@ -19,6 +19,16 @@ namespace sim {
         void execute();
     };
 
+    struct mul_res {
+        future<word> lhs;
+        future<word> rhs;
+        promise<word> product;
+        mul_res(encoded_operand, encoded_operand);
+        bool ready() const;
+        int worktime() const;
+        void execute();
+    };
+
     struct cmp_res {
         future<word> lhs;
         future<word> rhs;
@@ -39,7 +49,7 @@ namespace sim {
         void execute();
     };
 
-    using reservation = std::variant<add_res, cmp_res, jeq_res>;
+    using reservation = std::variant<add_res, mul_res, cmp_res, jeq_res>;
     bool ready(const reservation&);
     int worktime(const reservation&);
     void execute(reservation&);

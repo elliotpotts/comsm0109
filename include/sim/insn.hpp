@@ -20,6 +20,14 @@ namespace sim {
         bool try_issue() const;
     };
 
+    struct mul {
+        encoded_operand lhs;
+        encoded_operand rhs;
+        areg dst;
+        mul(encoded_operand, encoded_operand, areg);
+        bool try_issue() const;
+    };
+
     struct cmp {
         encoded_operand lhs;
         encoded_operand rhs;
@@ -56,7 +64,7 @@ namespace sim {
         bool try_issue() const;
     };
 
-    using insn = std::variant<add, cmp, ldw, stw, jeq, halt>;
+    using insn = std::variant<add, mul, cmp, ldw, stw, jeq, halt>;
     bool try_issue(const insn&);
 
     using encoded_insn = insn;

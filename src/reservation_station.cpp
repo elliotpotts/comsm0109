@@ -45,6 +45,22 @@ void sim::add_res::execute() {
     sum.fulfil(*lhs + *rhs);
 }
 
+sim::mul_res::mul_res(sim::encoded_operand lhs, sim::encoded_operand rhs):
+    lhs{sim::resolve_op(lhs)},
+    rhs{sim::resolve_op(rhs)},
+    product{}
+    {
+}
+bool sim::mul_res::ready() const {
+    return lhs.ready() && rhs.ready();
+}
+int sim::mul_res::worktime() const {
+    return 1;
+}
+void sim::mul_res::execute() {
+    product.fulfil(*lhs * *rhs);
+}
+
 sim::cmp_res::cmp_res(sim::encoded_operand lhs, sim::encoded_operand rhs):
     lhs{sim::resolve_op(lhs)}, rhs{sim::resolve_op(rhs)}, order{} {
 }

@@ -4,6 +4,7 @@
 #include <sim/reorder_buffer.hpp>
 #include <sim/lsq.hpp>
 #include <variant>
+#include <random>
 
 void summarise() {
     fmt::print("------------ at t = {}: --------------------------\n", sim::t);
@@ -32,11 +33,57 @@ int main() {
     sim::execution_units.push_back(std::make_unique<sim::lunit>());
     sim::execution_units.push_back(std::make_unique<sim::sunit>());
 
-    sim::pc = 0x0;
-    auto mem = sim::main_memory.begin();
-    // calculate 2*6 by repeated addition
-    *mem++ = sim::stw { 50, 0xb9 };
-    *mem++ = sim::halt {};
+    std::random_device seeder;
+    std::default_random_engine engine{seeder()};
+    std::uniform_int_distribution<sim::word> dist(-10, 10);
+    auto& m = sim::main_memory;
+    int i = 0;
+
+    // Bubblesort program---------------------------
+    int unsorted = i;
+        for (int k = 0; k < 10; k++) {
+            m[i++] = dist(engine);
+        }
+    int sorted = i;
+        for (int k = 0; k < 10; k++) {
+            m[i++] = -42;
+        }
+    int start = i;
+        //m[i++] = sim::add{}
+    //----------------------------------------------
+    /*
+    g0.k = 0;
+    g1.arr_length = 10;
+    g2.arr_end = arr_length - 1;
+    g3.i = 0;
+    g4.order = 0;
+    g5.lhs = 0;
+    g6.lhs_addr = 0;
+    g7.rhs = 0;
+    g8.rhs_addr = 0;
+    g9.temp = 0;
+
+    while (g0 < arr_length) {
+        g3 <- 0;
+        g9 <- 
+        while (i < arr_end - g0) {
+            lhs_addr <- start + i;
+            lhs <- *lhs_addr;
+            rhs_addr <- lhs_addr + 1;
+            rhs <- *rhs_addr;
+            order <- lhs <=> rhs;
+            if (order == 1) {
+                temp <- lhs;
+                lhs  <- rhs;
+                rhs  <- temp;
+            }
+            i++;
+        }
+        k++;
+    }
+    */
+    //----------------------------------------------
+    sim::pc = start;
 
     int max_cycles = 100;
     try {

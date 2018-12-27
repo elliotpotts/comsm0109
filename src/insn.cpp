@@ -23,6 +23,19 @@ bool sim::add::try_issue() const {
     return true;
 }
 
+sim::mul::mul(encoded_operand lhs, encoded_operand rhs, areg dst):
+    lhs{lhs}, rhs{rhs}, dst{dst} {  
+}
+bool sim::mul::try_issue() const {
+    auto res_ptr = sim::find_reservation();
+    if (res_ptr == nullptr || sim::rob.full()) return false;
+    mul_res res {lhs, rhs};
+    sim::rat.insert_or_assign(dst, res.product.anticipate());
+    sim::rob.push_back( writeback { res.product.anticipate(), dst });
+    res_ptr->emplace(std::move(res));
+    return true;
+}
+
 sim::cmp::cmp(encoded_operand lhs, encoded_operand rhs, areg dst):
     lhs{lhs}, rhs{rhs}, dst{dst} {
 }
