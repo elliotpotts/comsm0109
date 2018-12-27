@@ -20,21 +20,29 @@ bool sim::ready(const sim::commitment& commit) {
     }, commit);
 }
 
-void sim::commit(const sim::commitment& commit) {
-    std::visit(match {
-        [](const writeback& wb) { sim::crf[wb.dest] = *wb.value; },
-        [](const store& st) { sim::main_memory[*st.addr] = *st.data; },
+bool sim::commit(const sim::commitment& commit) {
+    return std::visit(match {
+        [](const writeback& wb) {
+            sim::crf[wb.dest] = *wb.value;
+            return false;
+        },
+        [](const store& st) {
+            sim::main_memory[*st.addr] = *st.data;
+            return false;
+        },
         [](const branch& b) {
             if (*b.predicted != *b.actual) {
+                sim::flush();
                 if (*b.actual) {
-                    // we mispredicted a branch.
-                    throw trap{};
+                    sim::pc = *b.sat_offset;
                 } else {
-                    // we mispredicted a branch.
-                    throw trap{};
+                    sim::pc = *b.unsat_offset;
                 }
+                return true;
+            } else {
+                return false;
             }
         },
-        [](const trap& t) { throw t; }
+        [](const trap& t) { throw t; return false; }
     }, commit);
 }

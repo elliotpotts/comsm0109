@@ -21,6 +21,16 @@ sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
     }, operand);
 }
 
+void sim::flush() {
+    sim::decode_buffer.clear();
+    sim::insn_queue.clear();
+    sim::rat.clear();
+    sim::lsq.clear();
+    sim::res_stn.clear();
+    //todo: cancel all execution units
+    sim::rob.clear();
+}
+
 void sim::fetch() {
     if (true) {
         while (!decode_buffer.full()
@@ -100,8 +110,12 @@ void sim::commit() {
     while (!rob.empty() && commits_left > 0) {
         if (sim::ready(sim::rob.front())) {
             commits_left--;
-            sim::commit(sim::rob.front());
-            sim::rob.pop_front();
+            if(sim::commit(sim::rob.front())) {
+                // we just flushed the pipeline
+                break;
+            } else {
+                sim::rob.pop_front();
+            }
         } else {
             break;
         }

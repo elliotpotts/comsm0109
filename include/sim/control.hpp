@@ -35,6 +35,7 @@ namespace sim {
     //  Commit ⭣
     inline std::map<areg, word> crf; // ⭢⭡
 
+    void flush();
     void fetch();
     void decode();
     void issue();

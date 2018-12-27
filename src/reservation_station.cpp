@@ -11,7 +11,7 @@ bool sim::ready(const sim::reservation& res) {
 }
 int sim::worktime(const sim::reservation& res) {
     return std::visit([](const auto& res) {
-        return res.ready();
+        return res.worktime();
     }, res);
 }
 void sim::execute(sim::reservation& res) {
@@ -39,7 +39,7 @@ bool sim::add_res::ready() const {
     return lhs.ready() && rhs.ready();
 }
 int sim::add_res::worktime() const {
-    return 4;
+    return 1;
 }
 void sim::add_res::execute() {
     sum.fulfil(*lhs + *rhs);

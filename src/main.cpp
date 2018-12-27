@@ -36,14 +36,16 @@ int main() {
     *mem++ = sim::add {0, 0, sim::areg::g4 }; // nop
     *mem++ = sim::add {0, 0, sim::areg::g0 }; // g0 = 0; loop counter
     *mem++ = sim::add {0, 0, sim::areg::g1 }; // g1 = 0; comparison result
-    *mem++ = sim::add {0, 2, sim::areg::g2 }; // g2 = 2; accumulator
-    // for (g0 = 0; g0 != 6; g0++) {
-    //*mem++ = sim::cmp {sim::areg::g0, 6, sim::areg::g1};
-    //*mem++ = sim::jeq {sim::areg::g1, -1, todo};
+    *mem++ = sim::add {0, 0, sim::areg::g2 }; // g2 = 2; accumulator
+    // do {
+        // g2 = g2 + 2
         *mem++ = sim::add {sim::areg::g2,  2, sim::areg::g2};
+        // g0 = g0 + 1
         *mem++ = sim::add {sim::areg::g0,  1, sim::areg::g0};
+        // g1 = g0 < 6 ? -1 : 0
         *mem++ = sim::cmp {sim::areg::g0,  6, sim::areg::g1};
         *mem++ = sim::jeq {sim::areg::g1, -1, -3};
+    // } while (g1 == -1)
     *mem++ = sim::halt {};
 
     int max_cycles = 100;
