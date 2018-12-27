@@ -8,6 +8,69 @@
 #include <iterator>
 #include <variant>
 
+int sim::cc = 0;
+sim::addr_t sim::pc = 0;
+std::vector<sim::memcell> sim::main_memory;
+boost::circular_buffer<sim::encoded_insn> sim::decode_buffer;
+boost::circular_buffer<sim::insn> sim::insn_queue;
+std::unordered_map<sim::areg, sim::future<sim::word>> sim::rat;
+boost::circular_buffer<sim::load_store> sim::lsq;
+std::vector<std::optional<sim::reservation>> sim::res_stn;
+std::vector<std::unique_ptr<sim::execution_unit>> sim::execution_units;
+boost::circular_buffer<sim::commitment> sim::rob;
+std::map<sim::areg, sim::word> sim::crf;
+
+void sim::reset(sim::config cfg, const std::vector<sim::memcell>& image, addr_t start) {
+    sim::cc = 0;
+    sim::pc = start;
+    sim::decode_buffer.clear();
+    sim::decode_buffer.set_capacity(cfg.order);
+    sim::insn_queue.clear();
+    sim::insn_queue.set_capacity(cfg.order);
+    sim::rat.clear();
+    sim::lsq.clear();
+    sim::lsq.set_capacity(cfg.lsq_length);
+    sim::res_stn.clear();
+    sim::res_stn.resize(cfg.res_stn_count);
+    sim::rob = boost::circular_buffer<sim::commitment>{ static_cast<unsigned>(cfg.rob_length) };
+    sim::execution_units.clear();
+    for(int i = 0; i < cfg.alu_count; i++)
+        sim::execution_units.push_back(std::make_unique<sim::alu>());
+    for(int i = 0; i < cfg.lunit_count; i++)
+        sim::execution_units.push_back(std::make_unique<sim::lunit>());
+    for(int i = 0; i < cfg.sunit_count; i++)
+        sim::execution_units.push_back(std::make_unique<sim::sunit>());
+    sim::main_memory = image;
+}
+
+void sim::run_until_halt() {
+    try {
+        while (true) {
+            sim::tick();
+        }
+    } catch (const sim::trap&) {
+    }
+}
+
+void sim::pdebug() {
+    fmt::print("------------ at t = {}: --------------------------\n", sim::cc);
+    fmt::print(" {:2}/{} instructions in decode buffer\n", sim::decode_buffer.size(), sim::decode_buffer.capacity());
+    fmt::print(" {:2}/{} instructions in instruction queue\n", sim::insn_queue.size(), sim::insn_queue.capacity());
+    fmt::print(" {:2}/{} non-empty reservation stations\n",
+        std::count_if(sim::res_stn.begin(),
+                      sim::res_stn.end(),
+                      [](const std::optional<auto>& rs) { return rs.has_value(); }),
+        sim::res_stn.size());
+    fmt::print(" {:2}/{} awaiting commitments in reorder buffer\n", sim::rob.size(), sim::rob.capacity());
+    for(const sim::commitment& commit : sim::rob) {
+        fmt::print("    {}\n", commit);
+    }
+    fmt::print(" {:2}/{} items in load store queue\n", sim::lsq.size(), sim::lsq.capacity());
+    for(const sim::load_store& ls : sim::lsq) {
+        fmt::print("    {}\n", ls);
+    }
+}
+
 sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
     return std::visit(match {
         [](sim::word immediate) { return sim::ready(immediate); },
@@ -27,7 +90,9 @@ void sim::flush() {
     sim::rat.clear();
     sim::lsq.clear();
     sim::res_stn.clear();
-    //todo: cancel all execution units
+    for(auto& eu : sim::execution_units) {
+        eu->cancel();
+    }
     sim::rob.clear();
 }
 
@@ -106,7 +171,7 @@ void sim::execute() {
 }
 
 void sim::commit() {
-    int commits_left = sim::pipeline_width;
+    int commits_left = sim::insn_queue.capacity();
     while (!rob.empty() && commits_left > 0) {
         if (sim::ready(sim::rob.front())) {
             commits_left--;
@@ -125,5 +190,5 @@ void sim::tick() {
     sim::issue();
     sim::decode();
     sim::fetch();
-    sim::t++;
+    sim::cc++;
 }

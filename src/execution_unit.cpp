@@ -44,14 +44,14 @@ void sim::lunit::start() {
         sim::lsq.end(),
         [](const load_store& ls) {
             auto ld_ptr = std::get_if<load>(&ls);
-            return ld_ptr && ld_ptr->addr && !(ld_ptr->loader || ld_ptr->data);
+            return ld_ptr && ld_ptr->addr && !ld_ptr->data && !ld_ptr->loader;
         }
     );
     if (ld_it != sim::lsq.end()) {
         load& ld = std::get<sim::load>(*ld_it);
         ld.loader = this;
         executing = &ld;
-        ticks_left = 10;
+        ticks_left = 1;
     }
 }
 void sim::lunit::work() {
@@ -63,6 +63,7 @@ void sim::lunit::finish() {
     if (ticks_left <= 0) {
         executing->data.fulfil(std::get<sim::addr_t>(sim::main_memory.at(*executing->addr)));
         executing->loader = nullptr;
+        executing = nullptr;
     }
 }
 
@@ -77,7 +78,7 @@ void sim::sunit::start() {
         {
         st_ptr->storer = this;
         executing = st_ptr;
-        ticks_left = 3;
+        ticks_left = 1;
     }
 }
 void sim::sunit::work() {

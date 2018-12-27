@@ -13,27 +13,39 @@
 #include <sim/lsq.hpp>
 
 namespace sim {
+    struct config {
+        int order;
+        int lsq_length;
+        int res_stn_count;
+        int rob_length;
+        int alu_count;
+        int lunit_count;
+        int sunit_count;
+        const char* name;
+    };
+
+    extern int cc;
+    extern addr_t pc;
+
     using memcell = std::variant<sim::word, sim::encoded_insn>;
-
-    inline int t = 0;
-    inline int cc = 0;
-    const inline int pipeline_width = 6;
-    inline addr_t pc = 0;
-
-    inline std::vector<memcell> main_memory(1024 * 1024);
+    extern std::vector<memcell> main_memory;
     //   Fetch ⭣
-    inline boost::circular_buffer<encoded_insn> decode_buffer { pipeline_width };
+    extern boost::circular_buffer<encoded_insn> decode_buffer;
     //  Decode ⭣
-    inline boost::circular_buffer<insn> insn_queue {pipeline_width};
+    extern boost::circular_buffer<insn> insn_queue;
     //   Issue ⭣
-    inline std::unordered_map<areg, future<word>> rat;
-    inline boost::circular_buffer<load_store> lsq {20};
-    inline std::vector<std::optional<reservation>> res_stn {36};
+    extern std::unordered_map<areg, future<word>> rat;
+    extern boost::circular_buffer<load_store> lsq;
+    extern std::vector<std::optional<reservation>> res_stn;
     // Execute ⭣
-    inline std::vector<std::unique_ptr<execution_unit>> execution_units;
-    inline boost::circular_buffer<commitment> rob {40};
+    extern std::vector<std::unique_ptr<execution_unit>> execution_units;
+    extern boost::circular_buffer<commitment> rob;
     //  Commit ⭣
-    inline std::map<areg, word> crf; // ⭢⭡
+    extern std::map<areg, word> crf; // ⭢⭡
+
+    void reset(config cfg, const std::vector<memcell>& img, addr_t start);
+    void run_until_halt();
+    void pdebug();
 
     void flush();
     void fetch();

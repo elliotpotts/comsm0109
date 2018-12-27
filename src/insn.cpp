@@ -67,7 +67,7 @@ sim::stw::stw(encoded_operand data, encoded_operand address):
 }
 bool sim::stw::try_issue() const {
     if (sim::lsq.full() || sim::rob.full()) return false;
-
+    
     auto st = store { sim::resolve_op(data), sim::resolve_op(address) };
     sim::lsq.push_back(st);
     sim::rob.push_back(st);
