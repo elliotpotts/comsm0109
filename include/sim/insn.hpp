@@ -20,6 +20,14 @@ namespace sim {
         bool try_issue() const;
     };
 
+    struct cmp {
+        encoded_operand lhs;
+        encoded_operand rhs;
+        areg dst;
+        cmp(encoded_operand, encoded_operand, areg);
+        bool try_issue() const;
+    };
+
     struct ldw {
         encoded_operand address;
         areg dst;
@@ -38,6 +46,7 @@ namespace sim {
         encoded_operand lhs;
         encoded_operand rhs;
         encoded_operand offset;
+        bool predicted = false;
         jeq(encoded_operand, encoded_operand, encoded_operand);
         bool try_issue() const;
     };

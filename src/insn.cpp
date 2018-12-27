@@ -16,11 +16,20 @@ sim::add::add(encoded_operand lhs, encoded_operand rhs, areg dst):
 bool sim::add::try_issue() const {
     auto res_ptr = sim::find_reservation();
     if (res_ptr == nullptr || sim::rob.full()) return false;
-    auto res = std::make_unique<add_res>(lhs, rhs);
-    sim::rat.insert_or_assign(dst, (res->sum.anticipate()));
-    sim::rob.push_back( writeback { res->sum.anticipate(), dst });
+    add_res res {lhs, rhs};
+    sim::rat.insert_or_assign(dst, (res.sum.anticipate()));
+    sim::rob.push_back( writeback { res.sum.anticipate(), dst });
     res_ptr->emplace(std::move(res));
     return true;
+}
+
+sim::cmp::cmp(encoded_operand lhs, encoded_operand rhs, areg dst):
+    lhs{lhs}, rhs{rhs}, dst{dst} {
+}
+bool sim::cmp::try_issue() const {
+    auto res_ptr = sim::find_reservation();
+    if (res_ptr == nullptr || sim::rob.full()) return false;
+    return false;
 }
 
 sim::ldw::ldw(encoded_operand address, areg dst):

@@ -16,7 +16,7 @@ namespace sim {
     };
 
     class alu : public execution_unit {
-        std::unique_ptr<reservation> executing;
+        std::optional<reservation> executing;
         int ticks_left;
     public:
         virtual void start() override;

@@ -28,7 +28,7 @@ namespace sim {
     //   Issue ⭣
     inline std::unordered_map<areg, future<word>> rat;
     inline boost::circular_buffer<load_store> lsq {20};
-    inline std::vector<std::optional<std::unique_ptr<reservation>>> res_stn {36};
+    inline std::vector<std::optional<reservation>> res_stn {36};
     // Execute ⭣
     inline std::vector<std::unique_ptr<execution_unit>> execution_units;
     inline boost::circular_buffer<commitment> rob {40};

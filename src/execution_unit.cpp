@@ -7,11 +7,11 @@
 
 void sim::alu::start() {
     if (executing) return;
-    for (std::optional<std::unique_ptr<sim::reservation>>& slot : sim::res_stn) {
-        if (slot && (**slot).ready()) {
+    for (std::optional<sim::reservation>& slot : sim::res_stn) {
+        if (slot && sim::ready(*slot)) {
             executing = std::move(*slot);
             slot.reset();
-            ticks_left = executing->worktime();
+            ticks_left = sim::worktime(*executing);
             break;
         }
     }
@@ -25,7 +25,7 @@ void sim::alu::work() {
 void sim::alu::finish() {
     if (!executing) return;
     if (ticks_left <= 0) {
-        executing->execute();
+        sim::execute(*executing);
         executing.reset();
     }
 }

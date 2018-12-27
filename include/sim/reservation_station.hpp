@@ -6,27 +6,25 @@
 #include <sim/opcode.hpp>
 #include <sim/future.hpp>
 #include <optional>
-#include <memory>
+#include <variant>
 
 namespace sim {
-    struct reservation {
-        virtual bool ready() = 0;
-        virtual int worktime() = 0;
-        virtual void execute() = 0;
-        virtual ~reservation() = default;
-    };
-
-    struct add_res : public reservation {
+    struct add_res {
         future<word> lhs;
         future<word> rhs;
         promise<word> sum;
         add_res(encoded_operand, encoded_operand);
-        virtual bool ready() override;
-        virtual int worktime() override;
-        virtual void execute() override;
+        bool ready() const;
+        int worktime() const;
+        void execute();
     };
 
-    std::optional<std::unique_ptr<sim::reservation>>* find_reservation();
+    using reservation = std::variant<add_res>;
+    bool ready(const reservation&);
+    int worktime(const reservation&);
+    void execute(reservation&);
+
+    std::optional<sim::reservation>* find_reservation();
 }
 
 #endif
