@@ -104,5 +104,6 @@ void sim::sunit::finish() {
             throw std::runtime_error("can't find lsq store corresponding to commit!\n");
         }
         sim::lsq.erase(lsq_it);
+        executing = nullptr;
     }
 }
