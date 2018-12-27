@@ -17,7 +17,7 @@ bool sim::add::try_issue() const {
     auto res_ptr = sim::find_reservation();
     if (res_ptr == nullptr || sim::rob.full()) return false;
     add_res res {lhs, rhs};
-    sim::rat.insert_or_assign(dst, (res.sum.anticipate()));
+    sim::rat.insert_or_assign(dst, res.sum.anticipate());
     sim::rob.push_back( writeback { res.sum.anticipate(), dst });
     res_ptr->emplace(std::move(res));
     return true;
@@ -29,7 +29,11 @@ sim::cmp::cmp(encoded_operand lhs, encoded_operand rhs, areg dst):
 bool sim::cmp::try_issue() const {
     auto res_ptr = sim::find_reservation();
     if (res_ptr == nullptr || sim::rob.full()) return false;
-    return false;
+    cmp_res res {lhs, rhs};
+    sim::rat.insert_or_assign(dst, res.order.anticipate());
+    sim::rob.push_back( writeback { res.order.anticipate(), dst});
+    res_ptr->emplace(std::move(res));
+    return true;
 }
 
 sim::ldw::ldw(encoded_operand address, areg dst):
@@ -61,13 +65,17 @@ sim::jeq::jeq(encoded_operand lhs, encoded_operand rhs, encoded_operand offset):
     lhs{lhs}, rhs{rhs}, offset{offset} {
 }
 bool sim::jeq::try_issue() const {
-    if (sim::rob.full()) return false;
+    auto res_ptr = sim::find_reservation();
+    if (res_ptr == nullptr || sim::rob.full()) return false;
 
-    /*sim::rob.push_back(branch {
-        sim::resolve_op(offset), //tru_offset
-        sim::ready(0), //fls_offset
-        sim::resolve_op(lhs) //taken
-    });*/
+    jeq_res res {lhs, rhs};
+    sim::rob.push_back( branch {
+        sim::resolve_op(offset),
+        sim::ready(origin + 1),
+        sim::never<bool>(), //TODO;
+        res.equal.anticipate()
+    });
+    res_ptr->emplace(std::move(res));
     return true;
 }
 

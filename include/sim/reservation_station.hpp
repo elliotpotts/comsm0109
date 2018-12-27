@@ -19,11 +19,30 @@ namespace sim {
         void execute();
     };
 
-    using reservation = std::variant<add_res>;
+    struct cmp_res {
+        future<word> lhs;
+        future<word> rhs;
+        promise<word> order;
+        cmp_res(encoded_operand, encoded_operand);
+        bool ready() const;
+        int worktime() const;
+        void execute();
+    };
+
+    struct jeq_res {
+        future<word> lhs;
+        future<word> rhs;
+        promise<bool> equal;
+        jeq_res(encoded_operand, encoded_operand);
+        bool ready() const;
+        int worktime() const;
+        void execute();
+    };
+
+    using reservation = std::variant<add_res, cmp_res, jeq_res>;
     bool ready(const reservation&);
     int worktime(const reservation&);
     void execute(reservation&);
-
     std::optional<sim::reservation>* find_reservation();
 }
 

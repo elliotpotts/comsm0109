@@ -37,10 +37,10 @@ int main() {
     sim::main_memory[0x6] = 42;
     sim::pc = sim::ready(0x0);
     auto mem = sim::main_memory.begin();
-    *mem++ = sim::add {sim::areg::g0, sim::areg::g1, sim::areg::g2};
-    *mem++ = sim::stw {100, 0x6};
-    *mem++ = sim::stw {42, sim::areg::g2};
-    *mem++ = sim::ldw {0x6, sim::areg::g4};
+    *mem++ = sim::cmp {sim::areg::g0, sim::areg::g1, sim::areg::g2};
+    //*mem++ = sim::stw {100, 0x6};
+    //*mem++ = sim::stw {42, sim::areg::g2};
+    //*mem++ = sim::ldw {0x6, sim::areg::g4};
     //*mem++ = sim::add {sim::areg::g0, sim::areg::g2, sim::areg::g3};
     //*mem++ = sim::add {sim::areg::g2, sim::areg::g3, sim::areg::g0};
     //*mem++ = sim::add {sim::areg::g4, sim::areg::g4, sim::areg::g4};
