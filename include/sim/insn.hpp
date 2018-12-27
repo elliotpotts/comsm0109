@@ -60,7 +60,6 @@ namespace sim {
     bool try_issue(const insn&);
 
     using encoded_insn = insn;
-    //std::unique_ptr<insn> decode_at(encoded_insn, addr_t);
 }
 
 #endif

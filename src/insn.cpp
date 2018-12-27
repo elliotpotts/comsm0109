@@ -85,30 +85,3 @@ bool sim::halt::try_issue() const {
     sim::rob.push_back(sim::trap {});
     return true;
 }
-
-/*
-std::unique_ptr<sim::insn> sim::decode_at(sim::encoded_insn encoded, addr_t addr) {
-    switch (encoded.head) {
-        case opcode::add: return std::make_unique<sim::add> (
-            encoded.tail[0],
-            encoded.tail[1],
-            std::get<areg>(encoded.tail[2])
-        );
-        case opcode::cmp: throw std::runtime_error("no cmp instruction yet");
-        case opcode::ldw: return std::make_unique<sim::ldw> (
-            encoded.tail[0],
-            std::get<areg>(encoded.tail[1])
-        );
-        case opcode::stw: return std::make_unique<sim::stw> (
-            encoded.tail[0],
-            encoded.tail[1]
-        );
-        case opcode::jeq: return std::make_unique<sim::jeq> (
-            encoded.tail[0],
-            encoded.tail[1],
-            encoded.tail[2]
-        );
-        case opcode::halt: return std::make_unique<sim::halt>();
-        default: throw std::runtime_error("error decoding: unkown opcode");
-    };
-}*/

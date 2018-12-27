@@ -34,8 +34,7 @@ namespace sim {
     inline boost::circular_buffer<commitment> rob {40};
     //  Commit ⭣
     inline std::map<areg, word> crf; // ⭢⭡
-
-    //void speculate(const static_insn& branch);
+    
     void fetch();
     void decode();
     void issue();

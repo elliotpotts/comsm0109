@@ -20,7 +20,6 @@ namespace sim {
         std::shared_ptr<bool> committed;
     };
     using load_store = std::variant<load, store>;
-    //bool ready(const load_store&);
 }
 
 #include <fmt/format.h>

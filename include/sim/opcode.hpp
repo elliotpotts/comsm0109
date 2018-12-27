@@ -10,7 +10,6 @@ namespace sim {
         jeq,
         halt
     };
-    //bool is_load(opcode oc);
 }
 
 #include <string_view>
