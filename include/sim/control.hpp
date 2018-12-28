@@ -24,6 +24,8 @@ namespace sim {
         const char* name;
     };
 
+    extern int branches;
+    extern int mispredicts;
     extern int cc;
     extern int ic;
     extern addr_t pc;
@@ -46,6 +48,7 @@ namespace sim {
 
     void reset(config cfg, const std::vector<memcell>& img, addr_t start);
     void run_until_halt();
+    void print_stats();
     void pdebug();
 
     void flush();

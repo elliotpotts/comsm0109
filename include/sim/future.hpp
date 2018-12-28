@@ -7,7 +7,7 @@
 #include <fmt/format.h>
 
 namespace sim {
-    inline unsigned fpid = 0;
+    inline unsigned fpid = 1;
 
     template<typename T>
     class promise;
@@ -17,12 +17,7 @@ namespace sim {
 
     template<typename T>
     future<T> ready(T value) {
-        return {fpid++, std::make_shared<std::optional<T>>(value), {}};
-    }
-
-    template<typename T>
-    future<T> never() {
-        return {fpid++, std::make_shared<std::optional<T>>(std::nullopt), {}};
+        return {0, std::make_shared<std::optional<T>>(value), {}};
     }
 
     template<typename T>
@@ -38,7 +33,6 @@ namespace sim {
         unsigned id;
         friend future<T> promise<T>::anticipate() const;
         friend future<T> ready<>(T);
-        friend future<T> never<T>();
         bool ready() const {
             return result->has_value() || exception;
         }

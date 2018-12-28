@@ -257,3 +257,59 @@ TEST_CASE ("IPC Benchmarking") {
         }
     }
 }
+
+TEST_CASE ("Bubblesort") {
+    std::default_random_engine rengine;
+    std::uniform_int_distribution dist {-500, 500};
+    std::vector<word> unsorted;
+    std::generate_n(std::back_inserter(unsorted), 100, [&](){ return dist(rengine); });
+
+    std::vector<memcell> image;
+    int arr_base = image.size();
+    std::copy(unsorted.begin(), unsorted.end(), std::back_inserter(image));
+    int last_offset = unsorted.size() - 1;
+
+    int start = image.size();
+    const areg i = areg::g0;
+    const areg swaps = areg::g1;
+    const areg ord = areg::g2;
+    const areg lhs_addr = areg::g3;
+    const areg lhs = areg::g4;
+    const areg rhs_addr = areg::g5;
+    const areg rhs = areg::g6;
+    auto m = std::back_inserter(image);
+
+    m++ = add {0, 0, swaps};
+    m++ = add {0, 0, i};
+        m++ = add {arr_base, i, lhs_addr};
+        m++ = ldw {lhs_addr, lhs};
+        m++ = add {lhs_addr, 1, rhs_addr};
+        m++ = ldw {rhs_addr, rhs};
+        m++ = cmp {lhs, rhs, ord};
+        m++ = jeq {ord, 0, 5};
+        m++ = jeq {ord, -1, 4};
+            m++ = stw {lhs, rhs_addr};
+            m++ = stw {rhs, lhs_addr};
+            m++ = add {swaps, 1, swaps};
+        m++ = add {i, 1, i};
+        m++ = cmp {i, last_offset, ord};
+    m++ = jeq {ord, -1, -12};
+    m++ = cmp {swaps, 0, ord};
+    m++ = jeq {ord, 1, -16};
+    m++ = halt {};
+
+    for (auto cfg : cfgs) {
+        WHEN (cfg.name) {
+            sim::reset (cfg, image, start);
+            sim::run_until_halt();
+            std::vector<word> sorted = unsorted;
+            std::sort(sorted.begin(), sorted.end());
+            std::vector<word> calculated;
+            for(addr_t i = 0; i < sorted.size(); i++) {
+                calculated.push_back(std::get<word>(main_memory[arr_base + i]));
+            }
+            REQUIRE (calculated == sorted);
+            
+        }
+    }
+}

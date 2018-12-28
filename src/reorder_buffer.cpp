@@ -31,6 +31,7 @@ bool sim::commit(const sim::commitment& commit) {
             return false;
         },
         [](const branch& b) {
+            sim::branches++;
             if (*b.predicted != *b.actual) {
                 sim::flush();
                 if (*b.actual) {

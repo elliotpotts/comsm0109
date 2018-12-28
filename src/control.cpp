@@ -8,6 +8,8 @@
 #include <iterator>
 #include <variant>
 
+int sim::branches = 0;
+int sim::mispredicts = 0;
 int sim::cc = 0;
 int sim::ic = 0;
 sim::addr_t sim::pc = 0;
@@ -22,6 +24,8 @@ boost::circular_buffer<sim::commitment> sim::rob;
 std::map<sim::areg, sim::word> sim::crf;
 
 void sim::reset(sim::config cfg, const std::vector<sim::memcell>& image, addr_t start) {
+    sim::branches = 0;
+    sim::mispredicts = 0;
     sim::ic = 0;
     sim::cc = 0;
     sim::pc = start;
@@ -52,6 +56,18 @@ void sim::run_until_halt() {
             sim::tick();
         }
     } catch (const sim::trap&) {
+    }
+}
+
+void sim::print_stats() {
+    fmt::print("   Clock count: {}\n", sim::cc);
+    fmt::print("    Insn count: {}\n", sim::ic);
+    fmt::print("           IPC: {}\n", static_cast<double>(sim::ic) / sim::cc);
+    if (sim::branches > 0) {
+        fmt::print("Branch hitrate: {:2}%\n",
+            static_cast<double>(sim::branches - sim::mispredicts)/sim::branches * 100);
+    } else {
+        fmt::print("Branch hitrate: (no branches)\n");
     }
 }
 
@@ -103,6 +119,7 @@ sim::future<sim::word> sim::resolve_op(encoded_operand operand) {
 }
 
 void sim::flush() {
+    sim::mispredicts++;
     sim::decode_buffer.clear();
     sim::insn_queue.clear();
     sim::rat.clear();

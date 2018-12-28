@@ -11,3 +11,4 @@ common_sources = [
 ]
 executable('sim', ['src/main.cpp'] + common_sources, dependencies: libfmt, include_directories: incdir)
 executable('testrunner', ['src/test.cpp'] + common_sources, dependencies: libfmt, include_directories: incdir)
+executable('bmark', ['src/benchmark.cpp'] + common_sources, dependencies: libfmt, include_directories: incdir)

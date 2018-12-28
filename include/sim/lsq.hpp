@@ -39,10 +39,10 @@ namespace fmt {
             return std::visit( match {
                 [&](const sim::load& ld) {
                     std::string loading_marker = ld.loader ? " (...)" : "";
-                    return format_to(ctx.begin(), "{}:  {}{}", ld.addr, ld.data.anticipate(), loading_marker);
+                    return format_to(ctx.begin(), "{} ⭠ [{}] {}", ld.data, ld.addr, loading_marker);
                 },
                 [&](const sim::store& st) {
-                    return format_to(ctx.begin(), "{} ⭠ {}", st.addr, st.data);
+                    return format_to(ctx.begin(), "[{}] ⭠ {}", st.addr, st.data);
                 }
             }, commit);
         }
