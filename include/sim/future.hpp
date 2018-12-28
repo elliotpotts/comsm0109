@@ -7,6 +7,8 @@
 #include <fmt/format.h>
 
 namespace sim {
+    inline unsigned fpid = 0;
+
     template<typename T>
     class promise;
 
@@ -15,24 +17,26 @@ namespace sim {
 
     template<typename T>
     future<T> ready(T value) {
-        return {std::make_shared<std::optional<T>>(value), {}};
+        return {fpid++, std::make_shared<std::optional<T>>(value), {}};
     }
 
     template<typename T>
     future<T> never() {
-        return {std::make_shared<std::optional<T>>(std::nullopt), {}};
+        return {fpid++, std::make_shared<std::optional<T>>(std::nullopt), {}};
     }
 
     template<typename T>
     class future {
         std::shared_ptr<std::optional<T>> result;
-        std::shared_ptr<std::exception> exception;
-        future(std::shared_ptr<std::optional<T>> result
+        future(unsigned id
+              ,std::shared_ptr<std::optional<T>> result
               ,std::shared_ptr<std::exception> exception):
-              result{result}, exception{exception} {
+              result{result}, exception{exception}, id{id} {
         }
     public:
-        friend future<T> promise<T>::anticipate();
+        std::shared_ptr<std::exception> exception;
+        unsigned id;
+        friend future<T> promise<T>::anticipate() const;
         friend future<T> ready<>(T);
         friend future<T> never<T>();
         bool ready() const {
@@ -54,9 +58,10 @@ namespace sim {
     class promise {
         friend class future<T>;
         std::shared_ptr<std::optional<T>> result;
-        std::shared_ptr<std::exception> exception;
     public:
-        promise() : result(std::make_shared<std::optional<T>>()) {
+        std::shared_ptr<std::exception> exception;
+        unsigned id;
+        promise() : result(std::make_shared<std::optional<T>>()), id(fpid++) {
         }
         void fulfil(T value) {
             if (*this) {
@@ -68,8 +73,8 @@ namespace sim {
         void error(const std::exception& e) {
             exception = std::make_shared<std::exception>(e);
         }
-        future<T> anticipate() {
-            return future<T>{result, exception};
+        future<T> anticipate() const {
+            return future<T>{id, result, exception};
         }
 
         explicit operator bool() const {
@@ -92,10 +97,11 @@ namespace fmt {
 
         template <typename FormatContext>
         auto format(const sim::future<T> &f, FormatContext &ctx) {
+            std::string err_marker = static_cast<bool>(f.exception) ? "!" : "";
             if (f) {
-                return format_to(ctx.begin(), "{}", *f);
+                return format_to(ctx.begin(), "{}{}/{}", err_marker, *f, f.id);
             } else {
-                return format_to(ctx.begin(), "⧗");
+                return format_to(ctx.begin(), "⧗{}{}", err_marker, f.id);
             }
         }
     };
@@ -106,10 +112,11 @@ namespace fmt {
 
         template <typename FormatContext>
         auto format(const sim::promise<T> &p, FormatContext &ctx) {
+            std::string err_marker = static_cast<bool>(p.exception) ? "!" : "";
             if (p) {
-                return format_to(ctx.begin(), "{}", *p);
+                return format_to(ctx.begin(), "{}{}/{}", err_marker, *p, p.id);
             } else {
-                return format_to(ctx.begin(), "□");
+                return format_to(ctx.begin(), "π{}{}", err_marker, p.id);
             }
         }
     };

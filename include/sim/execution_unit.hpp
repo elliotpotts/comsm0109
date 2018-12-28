@@ -13,6 +13,7 @@ namespace sim {
         virtual void start() = 0;
         virtual void work() = 0;
         virtual void finish() = 0;
+        virtual bool busy() const = 0;
         virtual ~execution_unit() = default;
     };
 
@@ -24,6 +25,7 @@ namespace sim {
         virtual void start() override;
         virtual void work() override;
         virtual void finish() override;
+        virtual bool busy() const override;
     };
 
     class lunit : public execution_unit {
@@ -34,7 +36,7 @@ namespace sim {
         virtual void start() override;
         virtual void work() override;
         virtual void finish() override;
-        virtual ~lunit() = default;
+        virtual bool busy() const override;
     };
 
     class sunit : public execution_unit {
@@ -45,7 +47,7 @@ namespace sim {
         virtual void start() override;
         virtual void work() override;
         virtual void finish() override;
-        virtual ~sunit() = default;
+        virtual bool busy() const override;
     };
 }
 

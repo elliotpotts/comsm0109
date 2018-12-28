@@ -57,7 +57,7 @@ bool sim::ldw::try_issue() const {
 
     sim::promise<sim::word> data;
     sim::rat.insert_or_assign(dst, data.anticipate());
-    sim::lsq.push_back( load { sim::resolve_op(address), data });
+    sim::lsq.push_back( load {address, data} );
     sim::rob.push_back( writeback { data.anticipate(), dst });
     return true;
 }

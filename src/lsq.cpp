@@ -4,6 +4,10 @@
 #include <variant>
 #include <boost/iterator/iterator_adaptor.hpp>
 
+sim::load::load(sim::encoded_operand addr, promise<word> data):
+    addr{sim::resolve_op(addr)}, data{data}, loader{nullptr} {
+}
+
 void sim::forward_stores() {
     for (auto ld_it = sim::lsq.begin(); ld_it != sim::lsq.end(); ld_it++) {
         auto ld_ptr = std::get_if<sim::load>(&*ld_it);
@@ -32,6 +36,7 @@ void sim::forward_stores() {
             if (fwdng_it != sim::lsq.rend()) {
                 if (ld_ptr->loader) {
                     ld_ptr->loader->cancel();
+                    ld_ptr->loader = nullptr;
                 }
                 ld_ptr->data.fulfil(*std::get<store>(*fwdng_it).data);
             }

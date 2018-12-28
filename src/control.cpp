@@ -62,6 +62,21 @@ void sim::pdebug() {
                       sim::res_stn.end(),
                       [](const std::optional<auto>& rs) { return rs.has_value(); }),
         sim::res_stn.size());
+    for(const std::optional<sim::reservation>& res : sim::res_stn) {
+        if (res) {
+            fmt::print("    {}\n", *res);
+        }
+    }
+    fmt::print(" {:2}/{} execution units busy\n",
+        std::count_if (
+            execution_units.begin(),
+            execution_units.end(),
+            [](const std::unique_ptr<execution_unit>& eu) {
+                return eu->busy();
+            }
+        ),
+        execution_units.size()
+    );
     fmt::print(" {:2}/{} awaiting commitments in reorder buffer\n", sim::rob.size(), sim::rob.capacity());
     for(const sim::commitment& commit : sim::rob) {
         fmt::print("    {}\n", commit);

@@ -6,10 +6,6 @@
 #include <variant>
 #include <algorithm>
 
-void sim::alu::cancel() {
-    executing.reset();
-    ticks_left = -1;
-}
 void sim::alu::start() {
     if (executing) return;
     for (std::optional<sim::reservation>& slot : sim::res_stn) {
@@ -25,6 +21,13 @@ void sim::alu::work() {
     if (!executing) return;
     ticks_left--;
 }
+bool sim::alu::busy() const {
+    return executing.has_value();
+}
+void sim::alu::cancel() {
+    executing.reset();
+    ticks_left = -1;
+}
 void sim::alu::finish() {
     if (!executing) return;
     if (ticks_left <= 0) {
@@ -32,13 +35,44 @@ void sim::alu::finish() {
         executing.reset();
     }
 }
-void sim::lunit::cancel() {
-    executing = nullptr;
-    ticks_left = -1;
-}
 
+#include <map>
+#include <optional>
+// Wait for previous stores to have their addresses found.
 void sim::lunit::start() {
     if (executing) return;
+    std::map<addr_t, std::optional<word>> stores; 
+    for (load_store& ls : sim::lsq) {
+        if (auto st_ptr = std::get_if<store>(&ls);
+            st_ptr) {
+            if (!st_ptr->addr) {
+                return; // could cause conflict, don't start anything.
+            } else if (st_ptr->data) {
+                stores.insert_or_assign(*st_ptr->addr, *st_ptr->data);
+            } else {
+                stores.try_emplace(*st_ptr->addr);
+            }
+        } else {
+            load& ld = std::get<load>(ls);
+            if (ld.addr && !ld.data && !ld.loader) {
+                if (auto st_it = stores.find(*ld.addr); st_it != stores.end()) {
+                    if (st_it->second) {
+                        ld.data.fulfil(*st_it->second);
+                    }
+                } else {
+                    ld.loader = this;
+                    executing = &ld;
+                    ticks_left = 3;
+                    return;
+                }
+            }
+        }
+    }
+}
+/*
+void sim::lunit::start() {
+    if (executing) return;
+    
     auto ld_it = std::find_if (
         sim::lsq.begin(),
         sim::lsq.end(),
@@ -51,12 +85,21 @@ void sim::lunit::start() {
         load& ld = std::get<sim::load>(*ld_it);
         ld.loader = this;
         executing = &ld;
-        ticks_left = 1;
+        ticks_left = 3;
     }
+}*/
+bool sim::lunit::busy() const {
+    return executing != nullptr;
 }
 void sim::lunit::work() {
     if (!executing) return;
     ticks_left--;
+}
+void sim::lunit::cancel() {
+    if (!executing) return;
+    executing->loader = nullptr;
+    executing = nullptr;
+    ticks_left = -1;
 }
 void sim::lunit::finish() {
     if (!executing) return;
@@ -71,10 +114,6 @@ void sim::lunit::finish() {
     }
 }
 
-void sim::sunit::cancel() {
-    executing = nullptr;
-    ticks_left = -1;
-}
 void sim::sunit::start() {
     if (executing || sim::rob.empty()) return;
     if (auto st_ptr = std::get_if<store>(&sim::rob.front());
@@ -82,12 +121,19 @@ void sim::sunit::start() {
         {
         st_ptr->storer = this;
         executing = st_ptr;
-        ticks_left = 1;
+        ticks_left = 3;
     }
 }
 void sim::sunit::work() {
     if (!executing) return;
     ticks_left--;
+}
+bool sim::sunit::busy() const {
+    return executing != nullptr;
+}
+void sim::sunit::cancel() {
+    executing = nullptr;
+    ticks_left = -1;
 }
 void sim::sunit::finish() {
     if (!executing) return;

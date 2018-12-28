@@ -151,22 +151,18 @@ TEST_CASE ("Sum array") {
 }
 
 TEST_CASE ("Vector sum") {
+    std::default_random_engine rengine;
+    std::uniform_int_distribution dist {-10, 10};
+    int length = 3;
+
     std::vector<memcell> image;
-    int length = 50;
     int lhs_base = image.size();
-    image.insert(image.end(), {
-        -45, 8, -62, 17, -81, -89, 75, 12, 60, -30, -48, 58, 71, 89, 75, -60, -35, -79, -21,
-        -75, -14, 4, 64, -82, -12, 4, 100, -47, -51, 61, 86, -17, 36, 3, 80, 33, 67, -46,
-        50, -72, -13, -51, 83, 73, -60, -16, 78, -98, -52, 47
-    });
+    std::generate_n(std::back_inserter(image), length, [&](){ return dist(rengine); });
     int rhs_base = image.size();
-    image.insert(image.end(), {
-        43, -98, 18, 87, 40, -65, 73, -38, -46, -34, -38, -24, 67, 65, -12, -49, -48, 24, 58,
-        0, -70, 25, -42, 23, 0, -14, -66, -43, 97, -92, 31, 0, 89, -33, -66, 97, 16, 52, 44,
-        63, 41, -66, -94, 89, 89, 13, 54, 42, -11, -37
-    });
+    std::generate_n(std::back_inserter(image), length, [&](){ return dist(rengine); });
     int res_base = image.size();
-    image.insert(image.end(), 100, -1);
+    image.insert(image.end(), length, 0);
+
     int start = image.size();
     const areg offset = areg::g0;
     const areg addr = areg::g1;
@@ -187,18 +183,17 @@ TEST_CASE ("Vector sum") {
     m++ = jeq {ord, -1, -9};
     m++ = halt {};
 
-    const std::vector<word> expected = {-2, -90, -44, 104, -41, -154, 148, -26, 14, -64, -86, 34,
-    138, 154, 63, -109, -83, -55, 37, -75, -84, 29, 22, -59, -12, -10, 34, -90, 46, -31, 117, -17,
-    125, -30, 14, 130, 83, 6, 94, -9, 28, -117, -11, 162, 29, -3, 132, -56, -63, 10};
     for (auto cfg : cfgs) {
         WHEN (cfg.name) {
             sim::reset (cfg, image, start);
             sim::run_until_halt();
-            std::vector<word> calculated;
             for(unsigned i = 0; i < length; i++) {
-                calculated.push_back(std::get<word>(main_memory[res_base + i]));
+                REQUIRE (
+                    std::get<word>(main_memory[lhs_base + i]) +
+                    std::get<word>(main_memory[rhs_base + i]) ==
+                    std::get<word>(main_memory[res_base + i])
+                );
             };
-            REQUIRE ( calculated == expected );
         }
     }
 }

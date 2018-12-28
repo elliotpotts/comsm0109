@@ -6,13 +6,15 @@
 #include <variant>
 #include <memory>
 #include <sim/util.hpp>
+#include <sim/operand.hpp>
 
 namespace sim {
     struct lunit;
     struct load {
         future<addr_t> addr;
         promise<word> data;
-        lunit* loader = nullptr;
+        lunit* loader;
+        load(encoded_operand, promise<word>);
     };
     struct sunit;
     struct store {
@@ -37,7 +39,8 @@ namespace fmt {
         auto format(const sim::load_store& commit, FormatContext &ctx) {
             return std::visit( match {
                 [&](const sim::load& ld) {
-                    return format_to(ctx.begin(), "{}:  {}", ld.addr, ld.data);
+                    std::string loading_marker = ld.loader ? " (...)" : "";
+                    return format_to(ctx.begin(), "{}:  {}{}", ld.addr, ld.data.anticipate(), loading_marker);
                 },
                 [&](const sim::store& st) {
                     return format_to(ctx.begin(), "{} ⭠ {}", st.addr, st.data);

@@ -56,4 +56,32 @@ namespace sim {
     std::optional<sim::reservation>* find_reservation();
 }
 
+#include <fmt/format.h>
+#include <sim/util.hpp>
+namespace fmt {
+    template <>
+    struct formatter<sim::reservation> {
+        template <typename ParseContext>
+        constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+        template <typename FormatContext>
+        auto format(const sim::reservation& res, FormatContext &ctx) {
+            return std::visit( match {
+                [&](const sim::add_res& x) {
+                    return format_to(ctx.begin(), "{} ⭠ {} + {}", x.sum, x.lhs, x.rhs);
+                },
+                [&](const sim::mul_res& x) {
+                    return format_to(ctx.begin(), "{} ⭠ {} × {}", x.product, x.lhs, x.rhs);
+                },
+                [&](const sim::cmp_res& x) {
+                    return format_to(ctx.begin(), "{} ⭠ {} <=> {}", x.order, x.lhs, x.rhs);
+                },
+                [&](const sim::jeq_res& x) {
+                    return format_to(ctx.begin(), "{} ⭠ {} == {}", x.equal, x.lhs, x.rhs);
+                }
+            }, res);
+        }
+    };
+}
+
 #endif
