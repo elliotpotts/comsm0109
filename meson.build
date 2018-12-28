@@ -1,4 +1,4 @@
-project('sim', 'cpp', default_options: ['cpp_std=c++2a'])
+project('sim', 'cpp', default_options: ['cpp_std=c++17'])
 libfmt = dependency('fmt')
 incdir = include_directories('include')
 common_sources = [
