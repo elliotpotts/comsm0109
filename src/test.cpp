@@ -17,6 +17,16 @@ std::vector<config> cfgs = {
         .name = "In Order"
     },
     {
+        .order = 4,
+        .lsq_length = 20,
+        .res_stn_count = 36,
+        .rob_length = 40,
+        .alu_count = 4,
+        .lunit_count = 2,
+        .sunit_count = 1,
+        .name = "4-way 4 alu"
+    },
+    {
         .order = 6,
         .lsq_length = 20,
         .res_stn_count = 36,
@@ -25,6 +35,26 @@ std::vector<config> cfgs = {
         .lunit_count = 2,
         .sunit_count = 1,
         .name = "6-way issue out of order"
+    },
+    {
+        .order = 6,
+        .lsq_length = 20,
+        .res_stn_count = 36,
+        .rob_length = 40,
+        .alu_count = 6,
+        .lunit_count = 2,
+        .sunit_count = 1,
+        .name = "6-way 6 alu"
+    },
+    {
+        .order = 4,
+        .lsq_length = 20,
+        .res_stn_count = 36,
+        .rob_length = 40,
+        .alu_count = 2,
+        .lunit_count = 2,
+        .sunit_count = 2,
+        .name = "Multiple storers"
     }
 };
 
@@ -194,6 +224,36 @@ TEST_CASE ("Vector sum") {
                     std::get<word>(main_memory[res_base + i])
                 );
             };
+        }
+    }
+}
+
+TEST_CASE ("IPC Benchmarking") {
+    std::vector<memcell> image;
+    auto m = std::back_inserter(image);
+    for(int i = 0; i < 10000; i++) {
+        m++ = add {40, 2, areg::g0};
+        m++ = add {40, 2, areg::g1};
+        m++ = add {40, 2, areg::g2};
+        m++ = add {40, 2, areg::g3};
+        m++ = add {40, 2, areg::g4};
+        m++ = add {40, 2, areg::g5};
+    }
+    m++ = add {40, 2, areg::g0};
+    m++ = add {40, 2, areg::g1};
+    m++ = add {40, 2, areg::g2};
+    m++ = add {40, 2, areg::g3};
+    m++ = add {40, 2, areg::g4};
+    m++ = halt {};
+    for (auto cfg : cfgs) {
+        WHEN (cfg.name) {
+            sim::reset (cfg, image, 0);
+            sim::run_until_halt();
+            fmt::print("Clocks: {}, instructions: {}, ipc: {}\n",
+                sim::cc,
+                sim::ic,
+                static_cast<double>(sim::ic) / sim::cc
+            );
         }
     }
 }

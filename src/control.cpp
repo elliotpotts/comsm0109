@@ -9,6 +9,7 @@
 #include <variant>
 
 int sim::cc = 0;
+int sim::ic = 0;
 sim::addr_t sim::pc = 0;
 std::vector<sim::memcell> sim::main_memory;
 boost::circular_buffer<sim::encoded_insn> sim::decode_buffer;
@@ -21,6 +22,7 @@ boost::circular_buffer<sim::commitment> sim::rob;
 std::map<sim::areg, sim::word> sim::crf;
 
 void sim::reset(sim::config cfg, const std::vector<sim::memcell>& image, addr_t start) {
+    sim::ic = 0;
     sim::cc = 0;
     sim::pc = start;
     sim::main_memory = image;
@@ -176,7 +178,6 @@ void sim::issue() {
 }
 
 void sim::execute() {
-    forward_stores();
     dismiss_loads();
     for (auto& eu : sim::execution_units) {
         eu->start();
@@ -197,6 +198,7 @@ void sim::commit() {
             if(sim::commit(sim::rob.front())) {
                 break;
             } else {
+                sim::ic++;
                 sim::rob.pop_front();
             }
         } else {

@@ -47,7 +47,7 @@ int main() {
         .lsq_length = 20,
         .res_stn_count = 36,
         .rob_length = 40,
-        .alu_count = 2,
+        .alu_count = 10,
         .lunit_count = 2,
         .sunit_count = 1,
         .name = "6-way issue out of order"
@@ -67,6 +67,11 @@ int main() {
                 std::get<sim::word>(sim::main_memory[lhs_base + i]),
                 std::get<sim::word>(sim::main_memory[rhs_base + i]),
                 std::get<sim::word>(sim::main_memory[res_base + i])
+            );
+            fmt::print("Clocks: {}, instructions: {}, ipc: {}\n",
+                sim::cc,
+                sim::ic,
+                static_cast<double>(sim::ic) / sim::cc
             );
         }
     }

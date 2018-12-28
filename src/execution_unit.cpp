@@ -38,7 +38,6 @@ void sim::alu::finish() {
 
 #include <map>
 #include <optional>
-// Wait for previous stores to have their addresses found.
 void sim::lunit::start() {
     if (executing) return;
     std::map<addr_t, std::optional<word>> stores; 
@@ -69,25 +68,6 @@ void sim::lunit::start() {
         }
     }
 }
-/*
-void sim::lunit::start() {
-    if (executing) return;
-    
-    auto ld_it = std::find_if (
-        sim::lsq.begin(),
-        sim::lsq.end(),
-        [](const load_store& ls) {
-            auto ld_ptr = std::get_if<load>(&ls);
-            return ld_ptr && ld_ptr->addr && !ld_ptr->data && !ld_ptr->loader;
-        }
-    );
-    if (ld_it != sim::lsq.end()) {
-        load& ld = std::get<sim::load>(*ld_it);
-        ld.loader = this;
-        executing = &ld;
-        ticks_left = 3;
-    }
-}*/
 bool sim::lunit::busy() const {
     return executing != nullptr;
 }
@@ -138,22 +118,14 @@ void sim::sunit::cancel() {
 void sim::sunit::finish() {
     if (!executing) return;
     if (ticks_left <= 0) {
-        executing->committed = true;
-        // remove corresponding lsq entry
-        auto lsq_it = std::find_if (
-            sim::lsq.begin(),
-            sim::lsq.end(),
-            [this](const sim::load_store& ls) {
-                auto st_ptr = std::get_if<sim::store>(&ls);
-                return st_ptr
-                    && *st_ptr->addr == *executing->addr
-                    && *st_ptr->data == *executing->data;
-            }
-        );
-        if (lsq_it == sim::lsq.end()) {
-            throw std::runtime_error("can't find lsq store corresponding to commit!\n");
+        // Wait until the store goes to the front of the lsq
+        if (auto st_ptr = std::get_if<sim::store>(&sim::lsq.front());
+            st_ptr && *st_ptr->addr == *executing->addr
+                   && *st_ptr->data == *executing->data)
+            {
+            executing->committed = true;
+            sim::lsq.pop_front();
+            executing = nullptr;
         }
-        sim::lsq.erase(lsq_it);
-        executing = nullptr;
     }
 }

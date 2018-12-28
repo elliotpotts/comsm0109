@@ -76,7 +76,6 @@ namespace sim {
         future<T> anticipate() const {
             return future<T>{id, result, exception};
         }
-
         explicit operator bool() const {
             return result->has_value() || exception;
         }

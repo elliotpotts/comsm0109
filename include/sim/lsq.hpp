@@ -24,7 +24,6 @@ namespace sim {
         bool committed = false;
     };
     using load_store = std::variant<load, store>;
-    void forward_stores();
     void dismiss_loads();
 }
 

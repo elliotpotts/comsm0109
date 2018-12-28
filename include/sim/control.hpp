@@ -25,6 +25,7 @@ namespace sim {
     };
 
     extern int cc;
+    extern int ic;
     extern addr_t pc;
 
     using memcell = std::variant<sim::word, sim::encoded_insn>;
