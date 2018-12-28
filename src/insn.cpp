@@ -53,6 +53,7 @@ sim::ldw::ldw(encoded_operand address, areg dst):
     address{address}, dst{dst} {
 }
 bool sim::ldw::try_issue() const {
+    //TODO: fix 'ldw g0 g0', i.e. resolve operand before inserting into rat
     if (sim::lsq.full() || sim::rob.full()) return false;
 
     sim::promise<sim::word> data;
